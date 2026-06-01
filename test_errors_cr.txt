@@ -1,0 +1,6 @@
+ERROR: Parse Error: Parse error. [Resource file res://test_cr.tscn:4]
+   at: _parse_node_tag (scene/resources/resource_format_text.cpp:292)
+ERROR: Failed loading resource: res://test_cr.tscn.
+   at: _load (core/io/resource_loader.cpp:343)
+ERROR: Failed loading scene: res://test_cr.tscn.
+   at: start (main/main.cpp:4668)

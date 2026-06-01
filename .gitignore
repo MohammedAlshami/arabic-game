@@ -1,0 +1,12 @@
+# Godot
+.godot/
+*.import
+godot_mcp_test_write.tmp
+
+# Node
+node_modules/
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
