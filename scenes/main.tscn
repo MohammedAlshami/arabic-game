@@ -157,24 +157,6 @@ offset_top = -648.0
 offset_bottom = -648.0
 grow_vertical = 0
 
-[node name="Instructions" type="TextureRect" parent="CanvasLayer/Bottom"]
-layout_mode = 0
-offset_left = 24.0
-offset_top = 375.0
-offset_right = 344.0
-offset_bottom = 887.0
-scale = Vector2(0.5, 0.5)
-texture = ExtResource("22_pm3ni")
-
-[node name="ControlsLabel" type="Label" parent="CanvasLayer/Bottom"]
-layout_mode = 0
-offset_left = 24.0
-offset_top = 320.0
-offset_right = 500.0
-offset_bottom = 365.0
-text = "M: Save Map | N: Load Map | ESC: Close"
-label_settings = SubResource("LabelSettings_q176i")
-
 [node name="Modal" type="Control" parent="CanvasLayer"]
 visible = false
 layout_mode = 3

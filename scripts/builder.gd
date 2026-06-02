@@ -1,5 +1,7 @@
 extends Node3D
 
+const MapLoader = preload("res://scripts/map_loader.gd")
+
 @export var structures: Array[Structure] = []
 
 var map:DataMap
@@ -32,37 +34,60 @@ var struct_modal:Control = null
 var categories: Dictionary = {}
 var canvas_layer:CanvasLayer = null
 
+var delete_mode := false
+var delete_cursor: Control = null
+var delete_cursor_tex: Texture2D = null
+var delete_marker: MeshInstance3D = null
+
+var json_defs: Dictionary = {}
+var json_id_map: Dictionary = {}
+var current_map_filename := ""
+
 func _ready():
 	map = DataMap.new()
 	plane = Plane(Vector3.UP, Vector3.ZERO)
 
-	var extra_paths := [
-		"res://structures/character.tres",
-		"res://structures/platform_basic.tres",
-		"res://structures/platform_medium.tres",
-		"res://structures/platform_large.tres",
-		"res://structures/coin_collectible.tres",
-		"res://structures/flag.tres",
-	]
-	for p in extra_paths:
-		var s = ResourceLoader.load(p)
-		if s:
-			structures.append(s)
+	json_defs = MapLoader.load_definitions()
+	structures = []
+	for sid in json_defs.keys():
+		var entry = json_defs[sid]
+		var s = Structure.new()
+		s.model = load(entry["model"])
+		s.price = entry.get("price", 0)
+		structures.append(s)
 
 	build_categories()
 
+	character_index = -1
+	var sid_list = json_defs.keys()
+	for i in sid_list.size():
+		if sid_list[i] == "character":
+			character_index = i
+			break
+
+	json_id_map = {}
 	var mesh_library = MeshLibrary.new()
 	var box = BoxMesh.new()
 	box.size = Vector3(0.5, 0.5, 0.5)
-	for i in structures.size():
+	var sid_list = json_defs.keys()
+	for i in sid_list.size():
+		var sid = sid_list[i]
+		var entry = json_defs[sid]
 		var id = mesh_library.get_last_unused_item_id()
 		mesh_library.create_item(id)
 		var mesh = get_mesh(structures[i].model)
-		if i == character_index or not mesh:
-			mesh_library.set_item_mesh(id, box)
-		else:
+		if mesh:
 			mesh_library.set_item_mesh(id, mesh)
-		mesh_library.set_item_mesh_transform(id, Transform3D())
+		else:
+			mesh_library.set_item_mesh(id, box)
+		var s = entry.get("scale", 1.0)
+		if s != 1.0:
+			var t = Transform3D()
+			t = t.scaled(Vector3(s, s, s))
+			mesh_library.set_item_mesh_transform(id, t)
+		else:
+			mesh_library.set_item_mesh_transform(id, Transform3D())
+		json_id_map[sid] = id
 
 	gridmap.mesh_library = mesh_library
 
@@ -75,12 +100,27 @@ func _ready():
 	mat.albedo_color = Color(0.2, 0.8, 0.4, 1)
 	character_marker.set_surface_override_material(0, mat)
 
+	delete_marker = MeshInstance3D.new()
+	delete_marker.mesh = BoxMesh.new()
+	delete_marker.mesh.size = Vector3(0.5, 0.5, 0.5)
+	delete_marker.visible = false
+	add_child(delete_marker)
+	var del_mat = StandardMaterial3D.new()
+	del_mat.albedo_color = Color(1, 0.2, 0.2, 0.5)
+	del_mat.transparency = StandardMaterial3D.TRANSPARENCY_ALPHA
+	delete_marker.set_surface_override_material(0, del_mat)
+
 	canvas_layer = get_node("../CanvasLayer") as CanvasLayer
 	build_struct_modal()
 	structures_btn.pressed.connect(_open_struct_modal)
+	_build_delete_cursor()
 
 	update_structure()
 	update_cash()
+
+	if GameState.map_to_load:
+		_on_map_selected(GameState.map_to_load)
+		GameState.map_to_load = ""
 
 	modal_save_btn.pressed.connect(_on_save_modal_save)
 	modal_cancel_btn.pressed.connect(_on_save_modal_cancel)
@@ -98,40 +138,22 @@ func build_categories():
 		"Vehicles": [],
 	}
 
-	var dirs_to_scan := {
-		"Animals": {"path": "res://models/animals", "prefix": "animal-"},
-		"Tracks": {"path": "res://models/track", "prefix": ""},
-		"Vehicles": {"path": "res://models/vehicles", "prefix": ""},
-	}
-	for cat_name in dirs_to_scan:
-		var info = dirs_to_scan[cat_name]
-		var d = DirAccess.open(info.path)
-		if d:
-			d.list_dir_begin()
-			var f = d.get_next()
-			while f != "":
-				if f.ends_with(".glb"):
-					if info.prefix.is_empty() or f.begins_with(info.prefix):
-						var path = info.path + "/" + f
-						var s = Structure.new()
-						s.model = load(path)
-						s.price = 0
-						structures.append(s)
-						categories[cat_name].append(structures.size() - 1)
-				f = d.get_next()
-			d.list_dir_end()
-
-	for i in structures.size():
-		var path = structures[i].model.resource_path
-		if "character" in path:
-			character_index = i
-		elif "building" in path or "garage" in path or "road" in path or "pavement" in path:
+	var sid_list = json_defs.keys()
+	for i in sid_list.size():
+		var sid = sid_list[i]
+		if sid.begins_with("animal-"):
+			categories["Animals"].append(i)
+		elif sid.begins_with("track-") or sid.begins_with("decoration-"):
+			categories["Tracks"].append(i)
+		elif sid.begins_with("vehicle-"):
+			categories["Vehicles"].append(i)
+		elif sid.begins_with("building-") or sid.begins_with("road-") or sid.begins_with("pavement-"):
 			categories["Buildings"].append(i)
-		elif "grass" in path or "tree" in path:
+		elif sid.begins_with("grass-") or sid == "grass":
 			categories["Nature"].append(i)
-		elif "platform" in path:
+		elif sid.begins_with("platform-"):
 			categories["Platforms"].append(i)
-		elif "coin" in path or "flag" in path:
+		elif sid in ["coin", "flag"]:
 			categories["Items"].append(i)
 
 func build_struct_modal():
@@ -290,6 +312,33 @@ func build_struct_modal():
 
 	overlay.gui_input.connect(_on_struct_overlay_click)
 
+func _build_delete_cursor():
+	delete_cursor = Control.new()
+	delete_cursor.visible = false
+	delete_cursor.mouse_filter = Control.MOUSE_FILTER_PASS
+	delete_cursor_tex = load("res://sprites/delete_cursor.png")
+	delete_cursor.draw.connect(_on_delete_cursor_draw)
+
+	if canvas_layer:
+		canvas_layer.add_child(delete_cursor)
+	else:
+		add_child(delete_cursor)
+
+func _on_delete_cursor_draw():
+	if not delete_cursor_tex:
+		return
+	var size := 48.0
+	var rect = Rect2(-size / 2.0, -size / 2.0, size, size)
+	delete_cursor.draw_texture_rect(delete_cursor_tex, rect, false, Color(1, 1, 1, 0.8))
+
+func _set_delete_mode(enabled: bool):
+	delete_mode = enabled
+	delete_cursor.visible = enabled
+	delete_marker.visible = false
+	selector.visible = not enabled and not character_mode
+	if enabled:
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+
 func _open_struct_modal():
 	struct_modal.visible = true
 
@@ -316,17 +365,33 @@ func _select_structure(idx: int):
 	_close_struct_modal()
 
 func _process(delta):
+	if struct_modal and struct_modal.visible:
+		return
+
 	action_y_axis()
 	action_save_modal()
 	action_load_modal()
 
+	var mouse_pos = get_viewport().get_mouse_position()
 	var world_position = plane.intersects_ray(
-		view_camera.project_ray_origin(get_viewport().get_mouse_position()),
-		view_camera.project_ray_normal(get_viewport().get_mouse_position()))
+		view_camera.project_ray_origin(mouse_pos),
+		view_camera.project_ray_normal(mouse_pos))
 
 	var gridmap_position = Vector3(round(world_position.x), y_offset, round(world_position.z))
 
-	if character_mode:
+	if delete_mode:
+		delete_cursor.position = mouse_pos
+		delete_cursor.queue_redraw()
+		var has_item = gridmap.get_cell_item(gridmap_position) != -1
+		if has_item and not (character_mode and map.character_position.distance_to(gridmap_position) < 1):
+			delete_marker.position = gridmap_position + Vector3(0, 0.5, 0)
+			delete_marker.visible = true
+		else:
+			delete_marker.visible = false
+		if Input.is_action_just_pressed("build"):
+			gridmap.set_cell_item(gridmap_position, -1)
+			Audio.play("sounds/removal-a.ogg, sounds/removal-b.ogg, sounds/removal-c.ogg, sounds/removal-d.ogg", -20)
+	elif character_mode:
 		character_marker.position = lerp(character_marker.position, gridmap_position + Vector3(0, 0.5, 0), min(delta * 40, 1.0))
 		action_place_character(gridmap_position)
 	else:
@@ -339,14 +404,29 @@ func get_mesh(packed_scene):
 	if not packed_scene:
 		return null
 	var scene_state:SceneState = packed_scene.get_state()
+	var meshes: Array[Mesh] = []
 	for i in range(scene_state.get_node_count()):
 		if scene_state.get_node_type(i) == "MeshInstance3D":
 			for j in range(scene_state.get_node_property_count(i)):
 				if scene_state.get_node_property_name(i, j) == "mesh":
 					var prop_value = scene_state.get_node_property_value(i, j)
 					if prop_value:
-						return prop_value.duplicate()
-	return null
+						meshes.append(prop_value.duplicate())
+	if meshes.is_empty():
+		return null
+	if meshes.size() == 1:
+		return meshes[0]
+	var combined := ArrayMesh.new()
+	for m in meshes:
+		for k in range(m.get_surface_count()):
+			var arrays = m.surface_get_arrays(k)
+			var mat = m.surface_get_material(k)
+			var prim = m.surface_get_primitive_type(k)
+			var index = combined.get_surface_count()
+			combined.add_surface_from_arrays(prim, arrays)
+			if mat:
+				combined.surface_set_material(index, mat)
+	return combined
 
 func action_build(gridmap_position):
 	if Input.is_action_just_pressed("build"):
@@ -369,6 +449,8 @@ func action_place_character(gridmap_position):
 		Audio.play("sounds/placement-a.ogg, sounds/placement-b.ogg", -20)
 
 func action_demolish(gridmap_position):
+	if delete_mode:
+		return
 	if Input.is_action_just_pressed("demolish"):
 		if character_mode and map.character_position.distance_to(gridmap_position) < 1:
 			map.character_position = Vector3.ZERO
@@ -417,21 +499,20 @@ func action_load_modal():
 func refresh_map_list():
 	for child in load_map_container.get_children():
 		child.queue_free()
-	var dir = DirAccess.open("user://")
+	var dir = DirAccess.open("res://maps/")
 	if not dir:
 		return
 	dir.list_dir_begin()
 	var file_name = dir.get_next()
 	var found := false
 	while file_name != "":
-		if file_name.ends_with(".res") and not file_name.begins_with("."):
+		if file_name.ends_with(".json") and file_name != "structures.json":
 			found = true
-			var map_name = file_name.trim_suffix(".res").replace("_", " ")
+			var map_name = file_name.get_basename().replace("_", " ")
 			var btn = Button.new()
 			btn.text = map_name
 			btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			var file_path = "user://" + file_name
-			btn.pressed.connect(_on_map_selected.bind(file_path))
+			btn.pressed.connect(_on_map_selected.bind(file_name))
 			load_map_container.add_child(btn)
 		file_name = dir.get_next()
 	dir.list_dir_end()
@@ -441,19 +522,22 @@ func refresh_map_list():
 		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		load_map_container.add_child(lbl)
 
-func _on_map_selected(file_path: String):
-	var loaded_map = ResourceLoader.load(file_path)
-	if not loaded_map:
+func _on_map_selected(filename: String):
+	if filename.is_empty():
+		return
+	var map_data = MapLoader.load_map(filename)
+	if map_data.is_empty():
 		return
 	gridmap.clear()
 	if character_marker:
 		character_marker.visible = false
-	map = loaded_map
-	for cell in map.structures:
-		gridmap.set_cell_item(Vector3i(cell.position.x, 0, cell.position.y), cell.structure, cell.orientation)
-	if map.character_position != Vector3.ZERO:
-		character_marker.position = map.character_position + Vector3(0, 0.5, 0)
-		character_marker.visible = true
+	current_map_filename = filename
+	map = DataMap.new()
+	MapLoader.place_cells(gridmap, map_data, json_id_map)
+	if map_data.has("character"):
+		var ch = map_data["character"]
+		map.character_position = Vector3(ch.get("x", 0), 0, ch.get("z", 0))
+	map.cash = map_data.get("cash", 10000)
 	character_mode = false
 	update_cash()
 	Audio.play("sounds/placement-a.ogg, sounds/placement-b.ogg", -20)
@@ -467,17 +551,17 @@ func _on_save_modal_save(_text := ""):
 	var title_text = modal_name_input.text.strip_edges()
 	if title_text.is_empty():
 		title_text = "Untitled Map"
-	map.title = title_text
-	map.structures.clear()
-	for cell in gridmap.get_used_cells():
-		var item = gridmap.get_cell_item(cell)
-		var data_structure:DataStructure = DataStructure.new()
-		data_structure.position = Vector2i(cell.x, cell.z)
-		data_structure.orientation = gridmap.get_cell_item_orientation(cell)
-		data_structure.structure = item
-		map.structures.append(data_structure)
-	ResourceSaver.save(map, "user://" + title_text.replace(" ", "_") + ".res")
-	print("Map saved as: " + title_text)
+	var filename = title_text.replace(" ", "_") + ".json"
+	var map_data = {
+		"title": title_text,
+		"cash": map.cash,
+		"cells": MapLoader.read_cells(gridmap, json_id_map)
+	}
+	if map.character_position != Vector3.ZERO:
+		map_data["character"] = {"x": map.character_position.x, "z": map.character_position.z}
+	MapLoader.save_map(map_data, filename)
+	current_map_filename = filename
+	print("Map saved as: " + filename)
 	Audio.play("sounds/placement-a.ogg, sounds/placement-b.ogg", -20)
 	modal.hide()
 
@@ -486,9 +570,20 @@ func _on_save_modal_cancel():
 	modal.hide()
 
 func _input(event):
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_DELETE:
+			_set_delete_mode(not delete_mode)
+			get_viewport().set_input_as_handled()
+			return
+		if event.keycode == KEY_BACKSPACE:
+			get_tree().change_scene_to_file("res://scenes/menu.tscn")
+			return
+
 	if event.is_action_pressed("ui_cancel"):
 		if struct_modal and struct_modal.visible:
 			_close_struct_modal()
+		elif delete_mode:
+			_set_delete_mode(false)
 		elif character_mode:
 			character_mode = false
 			character_marker.visible = false

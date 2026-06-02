@@ -25,7 +25,9 @@ func _on_stream_finished(stream):
 func play(sound_path: String, volume_db: float = -10.0):
 	# Path (or multiple, separated by commas)
 	var sounds = sound_path.split(",")
-	var chosen = "res://" + sounds[randi() % sounds.size()].strip_edges()
+	var chosen = sounds[randi() % sounds.size()].strip_edges()
+	if not chosen.begins_with("res://"):
+		chosen = "res://" + chosen
 	queue.append({
 		"path": chosen,
 		"volume": volume_db
