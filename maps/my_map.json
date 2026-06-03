@@ -1,5 +1,5 @@
 {
-	"cash": 8980,
+	"cash": 8955,
 	"cells": [
 		{
 			"id": "road-straight",
@@ -59,13 +59,6 @@
 		},
 		{
 			"id": "building-small-c",
-			"orient": 16,
-			"x": -3,
-			"y": 0,
-			"z": -2
-		},
-		{
-			"id": "building-small-c",
 			"orient": 22,
 			"x": 1,
 			"y": 0,
@@ -77,11 +70,60 @@
 			"x": 1,
 			"y": 0,
 			"z": -2
+		},
+		{
+			"id": "character",
+			"orient": 0,
+			"x": 2,
+			"y": 0,
+			"z": 1
+		},
+		{
+			"id": "character",
+			"orient": 0,
+			"x": 4,
+			"y": 0,
+			"z": 0
+		},
+		{
+			"id": "furniture-bed_single_A",
+			"orient": 16,
+			"x": -4,
+			"y": 0,
+			"z": 3
+		},
+		{
+			"id": "furniture-cabinet_medium_decorated",
+			"orient": 16,
+			"x": -5,
+			"y": 0,
+			"z": 1
+		},
+		{
+			"id": "furniture-cabinet_small",
+			"orient": 16,
+			"x": -5,
+			"y": 0,
+			"z": 5
+		},
+		{
+			"id": "furniture-cactus_medium_A",
+			"orient": 16,
+			"x": -5,
+			"y": 1,
+			"z": 5
+		},
+		{
+			"id": "furniture-couch",
+			"orient": 0,
+			"x": -3,
+			"y": 1,
+			"z": 0
 		}
 	],
 	"character": {
-		"x": -1.0,
-		"z": 1.0
+		"x": -14.0,
+		"z": -4.0
 	},
 	"title": "my map"
 }

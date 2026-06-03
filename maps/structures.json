@@ -1,18 +1,416 @@
 [
-  {"id":"road-straight",            "model":"res://models/road-straight.glb",             "price":25,  "scale":2},
-  {"id":"road-straight-lightposts", "model":"res://models/road-straight-lightposts.glb",  "price":30,  "scale":2},
-  {"id":"road-corner",              "model":"res://models/road-corner.glb",               "price":20,  "scale":2},
-  {"id":"road-split",              "model":"res://models/road-split.glb",                 "price":25,  "scale":2},
-  {"id":"road-intersection",       "model":"res://models/road-intersection.glb",          "price":35,  "scale":2},
-  {"id":"pavement",                "model":"res://models/pavement.glb",                   "price":10,  "scale":2},
-  {"id":"pavement-fountain",       "model":"res://models/pavement-fountain.glb",          "price":50,  "scale":2},
-  {"id":"building-small-a",        "model":"res://models/building-small-a.glb",           "price":60,  "scale":2},
-  {"id":"building-small-b",        "model":"res://models/building-small-b.glb",           "price":65,  "scale":2},
-  {"id":"building-small-c",        "model":"res://models/building-small-c.glb",           "price":70,  "scale":2},
-  {"id":"building-small-d",        "model":"res://models/building-small-d.glb",           "price":75,  "scale":2},
-  {"id":"building-garage",         "model":"res://models/building-garage.glb",            "price":80,  "scale":2},
-  {"id":"grass",                   "model":"res://models/grass.glb",                      "price":5,   "scale":2},
-  {"id":"grass-trees",             "model":"res://models/grass-trees.glb",                "price":15,  "scale":2},
-  {"id":"grass-trees-tall",        "model":"res://models/grass-trees-tall.glb",           "price":20,  "scale":2},
-  {"id":"character",               "model":"res://models/plat_models/character.glb",       "price":0,   "scale":1}
+  {
+    "id": "road-straight",
+    "model": "res://models/road-straight.glb",
+    "price": 25,
+    "scale": 2
+  },
+  {
+    "id": "road-straight-lightposts",
+    "model": "res://models/road-straight-lightposts.glb",
+    "price": 30,
+    "scale": 2
+  },
+  {
+    "id": "road-corner",
+    "model": "res://models/road-corner.glb",
+    "price": 20,
+    "scale": 2
+  },
+  {
+    "id": "road-split",
+    "model": "res://models/road-split.glb",
+    "price": 25,
+    "scale": 2
+  },
+  {
+    "id": "road-intersection",
+    "model": "res://models/road-intersection.glb",
+    "price": 35,
+    "scale": 2
+  },
+  {
+    "id": "pavement",
+    "model": "res://models/pavement.glb",
+    "price": 10,
+    "scale": 2
+  },
+  {
+    "id": "pavement-fountain",
+    "model": "res://models/pavement-fountain.glb",
+    "price": 50,
+    "scale": 2
+  },
+  {
+    "id": "building-small-a",
+    "model": "res://models/building-small-a.glb",
+    "price": 60,
+    "scale": 2
+  },
+  {
+    "id": "building-small-b",
+    "model": "res://models/building-small-b.glb",
+    "price": 65,
+    "scale": 2
+  },
+  {
+    "id": "building-small-c",
+    "model": "res://models/building-small-c.glb",
+    "price": 70,
+    "scale": 2
+  },
+  {
+    "id": "building-small-d",
+    "model": "res://models/building-small-d.glb",
+    "price": 75,
+    "scale": 2
+  },
+  {
+    "id": "building-garage",
+    "model": "res://models/building-garage.glb",
+    "price": 80,
+    "scale": 2
+  },
+  {
+    "id": "grass",
+    "model": "res://models/grass.glb",
+    "price": 5,
+    "scale": 2
+  },
+  {
+    "id": "grass-trees",
+    "model": "res://models/grass-trees.glb",
+    "price": 15,
+    "scale": 2
+  },
+  {
+    "id": "grass-trees-tall",
+    "model": "res://models/grass-trees-tall.glb",
+    "price": 20,
+    "scale": 2
+  },
+  {
+    "id": "character",
+    "model": "res://models/plat_models/character.glb",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-armchair",
+    "model": "res://models/furniture/armchair.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-armchair_pillows",
+    "model": "res://models/furniture/armchair_pillows.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-bed_double_A",
+    "model": "res://models/furniture/bed_double_A.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-bed_double_B",
+    "model": "res://models/furniture/bed_double_B.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-bed_single_A",
+    "model": "res://models/furniture/bed_single_A.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-bed_single_B",
+    "model": "res://models/furniture/bed_single_B.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-book_set",
+    "model": "res://models/furniture/book_set.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-book_single",
+    "model": "res://models/furniture/book_single.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-cabinet_medium",
+    "model": "res://models/furniture/cabinet_medium.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-cabinet_medium_decorated",
+    "model": "res://models/furniture/cabinet_medium_decorated.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-cabinet_small",
+    "model": "res://models/furniture/cabinet_small.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-cabinet_small_decorated",
+    "model": "res://models/furniture/cabinet_small_decorated.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-cactus_medium_A",
+    "model": "res://models/furniture/cactus_medium_A.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-cactus_medium_B",
+    "model": "res://models/furniture/cactus_medium_B.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-cactus_small_A",
+    "model": "res://models/furniture/cactus_small_A.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-cactus_small_B",
+    "model": "res://models/furniture/cactus_small_B.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-chair_A",
+    "model": "res://models/furniture/chair_A.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-chair_A_wood",
+    "model": "res://models/furniture/chair_A_wood.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-chair_B",
+    "model": "res://models/furniture/chair_B.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-chair_B_wood",
+    "model": "res://models/furniture/chair_B_wood.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-chair_C",
+    "model": "res://models/furniture/chair_C.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-chair_stool",
+    "model": "res://models/furniture/chair_stool.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-chair_stool_wood",
+    "model": "res://models/furniture/chair_stool_wood.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-couch",
+    "model": "res://models/furniture/couch.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-couch_pillows",
+    "model": "res://models/furniture/couch_pillows.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-lamp_standing",
+    "model": "res://models/furniture/lamp_standing.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-lamp_table",
+    "model": "res://models/furniture/lamp_table.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-pictureframe_large_A",
+    "model": "res://models/furniture/pictureframe_large_A.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-pictureframe_large_B",
+    "model": "res://models/furniture/pictureframe_large_B.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-pictureframe_medium",
+    "model": "res://models/furniture/pictureframe_medium.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-pictureframe_small_A",
+    "model": "res://models/furniture/pictureframe_small_A.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-pictureframe_small_B",
+    "model": "res://models/furniture/pictureframe_small_B.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-pictureframe_small_C",
+    "model": "res://models/furniture/pictureframe_small_C.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-pictureframe_standing_A",
+    "model": "res://models/furniture/pictureframe_standing_A.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-pictureframe_standing_B",
+    "model": "res://models/furniture/pictureframe_standing_B.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-pillow_A",
+    "model": "res://models/furniture/pillow_A.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-pillow_B",
+    "model": "res://models/furniture/pillow_B.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-rug_oval_A",
+    "model": "res://models/furniture/rug_oval_A.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-rug_oval_B",
+    "model": "res://models/furniture/rug_oval_B.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-rug_rectangle_A",
+    "model": "res://models/furniture/rug_rectangle_A.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-rug_rectangle_B",
+    "model": "res://models/furniture/rug_rectangle_B.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-rug_rectangle_stripes_A",
+    "model": "res://models/furniture/rug_rectangle_stripes_A.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-rug_rectangle_stripes_B",
+    "model": "res://models/furniture/rug_rectangle_stripes_B.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-shelf_A_big",
+    "model": "res://models/furniture/shelf_A_big.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-shelf_A_small",
+    "model": "res://models/furniture/shelf_A_small.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-shelf_B_large",
+    "model": "res://models/furniture/shelf_B_large.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-shelf_B_large_decorated",
+    "model": "res://models/furniture/shelf_B_large_decorated.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-shelf_B_small",
+    "model": "res://models/furniture/shelf_B_small.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-shelf_B_small_decorated",
+    "model": "res://models/furniture/shelf_B_small_decorated.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-table_low",
+    "model": "res://models/furniture/table_low.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-table_medium",
+    "model": "res://models/furniture/table_medium.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-table_medium_long",
+    "model": "res://models/furniture/table_medium_long.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "furniture-table_small",
+    "model": "res://models/furniture/table_small.gltf",
+    "price": 0,
+    "scale": 1
+  }
 ]

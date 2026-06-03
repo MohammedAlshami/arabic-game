@@ -123,8 +123,7 @@ func _ready():
 	delete_marker.set_surface_override_material(0, del_mat)
 
 	canvas_layer = get_node("../CanvasLayer") as CanvasLayer
-	build_struct_modal()
-	structures_btn.pressed.connect(_open_struct_modal)
+	structures_btn.visible = false
 	_build_delete_cursor()
 
 	update_structure()
@@ -146,6 +145,7 @@ func build_categories():
 	categories = {
 		"Buildings": [],
 		"Nature": [],
+		"Furniture": [],
 	}
 
 	var sid_list = json_defs.keys()
@@ -155,6 +155,8 @@ func build_categories():
 			categories["Buildings"].append(i)
 		elif sid.begins_with("grass-") or sid == "grass":
 			categories["Nature"].append(i)
+		elif sid.begins_with("furniture-"):
+			categories["Furniture"].append(i)
 
 func build_struct_modal():
 	struct_modal = Control.new()
@@ -484,11 +486,25 @@ func action_y_axis():
 		y_offset -= 1
 		y_offset = max(0, y_offset)
 
+func _cycle_structure(dir: int):
+	for _attempt in range(structures.size()):
+		index = (index + dir + structures.size()) % structures.size()
+		if structures[index] and structures[index].model:
+			update_structure()
+			return
+
 func update_structure():
 	for n in selector_container.get_children():
 		selector_container.remove_child(n)
 		n.queue_free()
-	var _model = structures[index].model.instantiate()
+	if index < 0 or index >= structures.size():
+		return
+	var ps = structures[index].model
+	if not ps:
+		return
+	var _model = ps.instantiate()
+	if not _model:
+		return
 	selector_container.add_child(_model)
 	_model.position.y += 0.25
 
@@ -593,6 +609,12 @@ func _input(event):
 			return
 		if event.keycode == KEY_BACKSPACE:
 			get_tree().change_scene_to_file("res://scenes/menu.tscn")
+			return
+		if event.keycode == KEY_Q and not character_mode and not delete_mode:
+			_cycle_structure(-1)
+			return
+		if event.keycode == KEY_E and not character_mode and not delete_mode:
+			_cycle_structure(1)
 			return
 		if event.keycode == KEY_Z:
 			if struct_modal and struct_modal.visible:

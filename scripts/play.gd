@@ -5,6 +5,7 @@ const MapLoader = preload("res://scripts/map_loader.gd")
 var gridmap: GridMap
 var player: Node3D
 var view: Node3D
+var day_night: Node = null
 
 func _ready():
 	load_map()
@@ -28,7 +29,7 @@ func load_map():
 
 	MapLoader.place_cells(gridmap, map_data, mesh_lib.get_meta("id_map"))
 
-	# Ground plane (lower it to avoid z-fighting with structures)
+	# Ground plane
 	var ground = MeshInstance3D.new()
 	ground.mesh = BoxMesh.new()
 	ground.mesh.size = Vector3(60, 0.5, 60)
@@ -42,6 +43,10 @@ func load_map():
 	body.add_child(col)
 	body.position = Vector3(0, -0.75, 0)
 	add_child(body)
+
+	# Day/Night manager
+	day_night = load("res://scripts/day_night.gd").new()
+	add_child(day_night)
 
 	# Spawn player
 	var spawn_pos = Vector3(0, 2, 0)
@@ -71,3 +76,47 @@ func _unhandled_input(event):
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_BACKSPACE:
 			get_tree().change_scene_to_file("res://scenes/menu.tscn")
+			return
+		if event.keycode == KEY_V and day_night and not day_night.is_sleeping:
+			_try_sleep()
+
+func _try_sleep():
+	if not gridmap or not player:
+		return
+	var cell = gridmap.local_to_map(player.global_position)
+	var ml = gridmap.mesh_library
+	if not ml or not ml.has_meta("id_map"):
+		return
+	var id_map = ml.get_meta("id_map")
+	var rev_map = {}
+	for key in id_map:
+		rev_map[id_map[key]] = key
+	var bed_ids = day_night.get_bed_ids()
+	for x in range(-1, 2):
+		for z in range(-1, 2):
+			var check = cell + Vector3i(x, 0, z)
+			var item = gridmap.get_cell_item(check)
+			if item >= 0:
+				var sid = rev_map.get(item, "")
+				if sid in bed_ids:
+					_sleep()
+					return
+
+func _sleep():
+	if not day_night or day_night.is_sleeping:
+		return
+	player.set_process(false)
+	player.set_physics_process(false)
+	player.visible = false
+	player.collision_layer = 0
+	player.collision_mask = 0
+	day_night.sleep()
+
+func _physics_process(_delta):
+	if day_night and day_night.is_player_asleep() == false and day_night.is_sleeping == false:
+		if not player.visible:
+			player.set_process(true)
+			player.set_physics_process(true)
+			player.visible = true
+			player.collision_layer = 1
+			player.collision_mask = 1
