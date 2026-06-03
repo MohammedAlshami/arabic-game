@@ -66,7 +66,6 @@ func _set_day():
 	sky_material.sky_top_color = Color(0.47, 0.69, 1.0)
 	sky_material.sky_horizon_color = Color(0.67, 0.68, 0.70)
 	sky_material.ground_bottom_color = Color(1, 1, 1)
-	sky_material.sun_energy = 1.0
 	env_node.environment.ambient_light_color = Color(0.66, 0.69, 0.77)
 	env_node.environment.ambient_light_energy = 0.75
 	if sun:
@@ -78,7 +77,6 @@ func _set_night():
 	sky_material.sky_top_color = Color(0.01, 0.01, 0.05)
 	sky_material.sky_horizon_color = Color(0.02, 0.02, 0.08)
 	sky_material.ground_bottom_color = Color(0.0, 0.0, 0.02)
-	sky_material.sun_energy = 0.0
 	env_node.environment.ambient_light_color = Color(0.1, 0.1, 0.2)
 	env_node.environment.ambient_light_energy = 0.15
 	if sun:

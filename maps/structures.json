@@ -412,5 +412,245 @@
     "model": "res://models/furniture/table_small.gltf",
     "price": 0,
     "scale": 1
+  },
+  {
+    "id": "block-bricks_a",
+    "model": "res://models/blockbits/bricks_A.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-bricks_b",
+    "model": "res://models/blockbits/bricks_B.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-colored_block_blue",
+    "model": "res://models/blockbits/colored_block_blue.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-colored_block_green",
+    "model": "res://models/blockbits/colored_block_green.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-colored_block_red",
+    "model": "res://models/blockbits/colored_block_red.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-colored_block_yellow",
+    "model": "res://models/blockbits/colored_block_yellow.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-decorative_block_blue",
+    "model": "res://models/blockbits/decorative_block_blue.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-decorative_block_green",
+    "model": "res://models/blockbits/decorative_block_green.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-decorative_block_red",
+    "model": "res://models/blockbits/decorative_block_red.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-decorative_block_yellow",
+    "model": "res://models/blockbits/decorative_block_yellow.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-dirt",
+    "model": "res://models/blockbits/dirt.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-dirt_with_grass",
+    "model": "res://models/blockbits/dirt_with_grass.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-dirt_with_snow",
+    "model": "res://models/blockbits/dirt_with_snow.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-glass",
+    "model": "res://models/blockbits/glass.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-grass",
+    "model": "res://models/blockbits/grass.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-grass_with_snow",
+    "model": "res://models/blockbits/grass_with_snow.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-gravel",
+    "model": "res://models/blockbits/gravel.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-gravel_with_grass",
+    "model": "res://models/blockbits/gravel_with_grass.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-gravel_with_snow",
+    "model": "res://models/blockbits/gravel_with_snow.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-lava",
+    "model": "res://models/blockbits/lava.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-metal",
+    "model": "res://models/blockbits/metal.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-prototype",
+    "model": "res://models/blockbits/prototype.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-sand_a",
+    "model": "res://models/blockbits/sand_A.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-sand_b",
+    "model": "res://models/blockbits/sand_B.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-sand_with_grass",
+    "model": "res://models/blockbits/sand_with_grass.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-sand_with_snow",
+    "model": "res://models/blockbits/sand_with_snow.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-snow",
+    "model": "res://models/blockbits/snow.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-stone",
+    "model": "res://models/blockbits/stone.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-stone_dark",
+    "model": "res://models/blockbits/stone_dark.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-stone_with_copper",
+    "model": "res://models/blockbits/stone_with_copper.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-stone_with_gold",
+    "model": "res://models/blockbits/stone_with_gold.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-stone_with_silver",
+    "model": "res://models/blockbits/stone_with_silver.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-striped_block_blue",
+    "model": "res://models/blockbits/striped_block_blue.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-striped_block_green",
+    "model": "res://models/blockbits/striped_block_green.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-striped_block_red",
+    "model": "res://models/blockbits/striped_block_red.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-striped_block_yellow",
+    "model": "res://models/blockbits/striped_block_yellow.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-tree",
+    "model": "res://models/blockbits/tree.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-tree_with_snow",
+    "model": "res://models/blockbits/tree_with_snow.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-water",
+    "model": "res://models/blockbits/water.gltf",
+    "price": 0,
+    "scale": 0.5
+  },
+  {
+    "id": "block-wood",
+    "model": "res://models/blockbits/wood.gltf",
+    "price": 0,
+    "scale": 0.5
   }
 ]

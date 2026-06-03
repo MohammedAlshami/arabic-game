@@ -19,7 +19,7 @@ func _ready():
 	_connect_buttons()
 
 func apply_style():
-	var bg = $Bg
+	var _bg = $Bg
 	var ground = $Ground
 	var ground_overlay = $Ground/GroundOverlay
 	var title_label = $Title
@@ -67,8 +67,8 @@ func apply_style():
 	var buttons_data = home_data.get("buttons", [])
 	for btn_data in buttons_data:
 		var btn_id = btn_data.get("id", "")
-		var name = btn_id.capitalize() + "Btn"
-		var btn = get_node_or_null(name)
+		var btn_name = btn_id.capitalize() + "Btn"
+		var btn = get_node_or_null(btn_name)
 		if btn:
 			btn.text = btn_data.get("text", btn.text)
 			var bs = StyleBoxFlat.new()

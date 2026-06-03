@@ -146,6 +146,7 @@ func build_categories():
 		"Buildings": [],
 		"Nature": [],
 		"Furniture": [],
+		"Blocks": [],
 	}
 
 	var sid_list = json_defs.keys()
@@ -157,6 +158,8 @@ func build_categories():
 			categories["Nature"].append(i)
 		elif sid.begins_with("furniture-"):
 			categories["Furniture"].append(i)
+		elif sid.begins_with("block-"):
+			categories["Blocks"].append(i)
 
 func build_struct_modal():
 	struct_modal = Control.new()

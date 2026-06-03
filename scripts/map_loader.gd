@@ -36,7 +36,7 @@ static func load_map(filename: String) -> Dictionary:
 # Save a map dictionary to res://maps/ as JSON
 static func save_map(data: Dictionary, filename: String) -> bool:
 	var path = "res://maps/" + filename
-	var json_str = JSON.new().stringify(data, "\t")
+	var json_str = JSON.stringify(data, "\t")
 	var file = FileAccess.open(path, FileAccess.WRITE)
 	if not file:
 		push_error("Cannot write map: ", path)
@@ -50,7 +50,7 @@ static func build_mesh_library(defs: Dictionary) -> MeshLibrary:
 	var box = BoxMesh.new()
 	box.size = Vector3(0.5, 0.5, 0.5)
 	var id_map = {}
-	var next_id = 0
+	var _next_id = 0
 	for key in defs.keys():
 		var entry = defs[key]
 		var ps = load(entry["model"])
@@ -81,7 +81,6 @@ static func build_mesh_library(defs: Dictionary) -> MeshLibrary:
 		else:
 			lib.set_item_mesh_transform(item_id, Transform3D())
 		id_map[key] = item_id
-		next_id += 1
 	lib.set_meta("id_map", id_map)
 	return lib
 
