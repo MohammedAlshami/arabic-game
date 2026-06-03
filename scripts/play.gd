@@ -24,6 +24,7 @@ var ground_plane: MeshInstance3D
 var ground_body: StaticBody3D
 var unsaved_changes: bool = false
 var save_timer: float = 0.0
+var fog_visible := false
 
 func _ready():
 	load_map()
@@ -56,13 +57,12 @@ func load_map():
 		bounds_max.z = maxi(bounds_max.z, cell_pos.z)
 
 	var span = max(bounds_max.x - bounds_min.x, bounds_max.z - bounds_min.z)
+	_create_ground_plane()
 	if span < INITIAL_RADIUS * 2:
 		var spawn_center = Vector3i(0, 0, 0)
 		if map_data.has("character"):
 			spawn_center = Vector3i(map_data["character"].get("x", 0), 0, map_data["character"].get("z", 0))
 		_generate_initial_area(spawn_center)
-
-	_create_ground_plane()
 
 	day_night = load("res://scripts/day_night.gd").new()
 	add_child(day_night)
@@ -70,8 +70,12 @@ func load_map():
 	var spawn_pos = Vector3(0, 2, 0)
 	if map_data.has("character"):
 		var ch = map_data["character"]
-		spawn_pos = Vector3(ch.get("x", 0), 0, ch.get("z", 0))
+		spawn_pos = Vector3(ch.get("x", 0), ch.get("y", 0), ch.get("z", 0))
 	_spawn_player(spawn_pos)
+
+	var env_node = $WorldEnvironment
+	if env_node and env_node.environment:
+		env_node.environment.fog_enabled = false
 
 func _create_ground_plane():
 	var center = _get_ground_center()
@@ -138,6 +142,12 @@ func _unhandled_input(event):
 			return
 		if event.keycode == KEY_V and day_night and not day_night.is_sleeping:
 			_try_sleep()
+		if event.keycode == KEY_F1:
+			fog_visible = not fog_visible
+			var env_node = $WorldEnvironment
+			if env_node and env_node.environment:
+				env_node.environment.fog_enabled = fog_visible
+			return
 
 func _try_sleep():
 	if not gridmap or not player:

@@ -652,5 +652,209 @@
     "model": "res://models/blockbits/wood.gltf",
     "price": 0,
     "scale": 0.5
+  },
+  {
+    "id": "park-bench",
+    "model": "res://models/park/bench.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "park-bird",
+    "model": "res://models/park/bird.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "park-bush",
+    "model": "res://models/park/bush.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "park-bush_large",
+    "model": "res://models/park/bush_large.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "park-cobble_stones",
+    "model": "res://models/park/cobble_stones.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "park-cobble_stones_large",
+    "model": "res://models/park/cobble_stones_large.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "park-floor_grass_sliced_A",
+    "model": "res://models/park/floor_grass_sliced_A.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "park-floor_grass_sliced_B",
+    "model": "res://models/park/floor_grass_sliced_B.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "park-floor_grass_sliced_base",
+    "model": "res://models/park/floor_grass_sliced_base.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "park-floor_grass_sliced_C",
+    "model": "res://models/park/floor_grass_sliced_C.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "park-floor_grass_sliced_D",
+    "model": "res://models/park/floor_grass_sliced_D.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "park-floor_grass_sliced_E",
+    "model": "res://models/park/floor_grass_sliced_E.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "park-floor_grass_sliced_F",
+    "model": "res://models/park/floor_grass_sliced_F.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "park-floor_grass_sliced_G",
+    "model": "res://models/park/floor_grass_sliced_G.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "park-floor_grass_sliced_H",
+    "model": "res://models/park/floor_grass_sliced_H.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "park-floor_grass_sliced_I",
+    "model": "res://models/park/floor_grass_sliced_I.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "park-flower_A",
+    "model": "res://models/park/flower_A.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "park-flower_B",
+    "model": "res://models/park/flower_B.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "park-fountain",
+    "model": "res://models/park/fountain.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "park-grass_A",
+    "model": "res://models/park/grass_A.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "park-grass_B",
+    "model": "res://models/park/grass_B.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "park-hedge_corner",
+    "model": "res://models/park/hedge_corner.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "park-hedge_straight",
+    "model": "res://models/park/hedge_straight.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "park-hedge_straight_long",
+    "model": "res://models/park/hedge_straight_long.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "park-street_lantern",
+    "model": "res://models/park/street_lantern.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "park-trashcan",
+    "model": "res://models/park/trashcan.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "park-tree",
+    "model": "res://models/park/tree.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "park-tree_large",
+    "model": "res://models/park/tree_large.gltf",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "character-barbarian",
+    "model": "res://models/characters/Barbarian.glb",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "character-knight",
+    "model": "res://models/characters/Knight.glb",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "character-mage",
+    "model": "res://models/characters/Mage.glb",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "character-ranger",
+    "model": "res://models/characters/Ranger.glb",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "character-rogue",
+    "model": "res://models/characters/Rogue.glb",
+    "price": 0,
+    "scale": 1
+  },
+  {
+    "id": "character-rogue_hooded",
+    "model": "res://models/characters/Rogue_Hooded.glb",
+    "price": 0,
+    "scale": 1
   }
 ]

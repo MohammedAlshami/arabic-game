@@ -60,26 +60,17 @@ static func build_mesh_library(defs: Dictionary) -> MeshLibrary:
 		lib.create_item(item_id)
 		if mesh:
 			lib.set_item_mesh(item_id, mesh)
-			# Add collision shape matching the mesh bounds
 			var aabb = mesh.get_aabb()
+			var t = Transform3D()
+			if s != 1.0:
+				t = t.scaled(Vector3(s, s, s))
+			lib.set_item_mesh_transform(item_id, t)
 			var col_shape = BoxShape3D.new()
 			var size = aabb.size * s
 			if size.length() < 0.01:
 				size = Vector3(0.5, 0.5, 0.5)
 			col_shape.size = size
 			lib.set_item_shapes(item_id, [col_shape])
-		else:
-			lib.set_item_mesh(item_id, box)
-			var col_shape = BoxShape3D.new()
-			col_shape.size = Vector3(0.5, 0.5, 0.5)
-			lib.set_item_shapes(item_id, [col_shape])
-		s = entry.get("scale", 1.0)
-		if s != 1.0:
-			var t = Transform3D()
-			t = t.scaled(Vector3(s, s, s))
-			lib.set_item_mesh_transform(item_id, t)
-		else:
-			lib.set_item_mesh_transform(item_id, Transform3D())
 		id_map[key] = item_id
 	lib.set_meta("id_map", id_map)
 	return lib

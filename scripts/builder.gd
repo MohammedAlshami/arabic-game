@@ -10,7 +10,8 @@ var index:int = 0
 var y_offset := 0
 var character_mode := false
 var character_marker: Node3D = null
-var character_index := -1
+var character_index := 0
+var character_indices: Array[int] = []
 
 @export var selector:Node3D
 @export var selector_container:Node3D
@@ -38,11 +39,13 @@ var delete_mode := false
 var delete_cursor: Control = null
 var delete_cursor_tex: Texture2D = null
 var delete_marker: MeshInstance3D = null
+var delete_marker_mat: Material = null
 var character_dim_mat: Material = null
 
 var json_defs: Dictionary = {}
 var json_id_map: Dictionary = {}
 var current_map_filename := ""
+var fog_visible := false
 
 func _ready():
 	map = DataMap.new()
@@ -59,12 +62,12 @@ func _ready():
 
 	build_categories()
 
-	character_index = -1
+	character_index = 0
+	character_indices = []
 	var sid_list = json_defs.keys()
 	for i in sid_list.size():
-		if sid_list[i] == "character":
-			character_index = i
-			break
+		if sid_list[i] == "character" or sid_list[i].begins_with("character-"):
+			character_indices.append(i)
 
 	json_id_map = {}
 	var mesh_library = MeshLibrary.new()
@@ -104,23 +107,14 @@ func _ready():
 	dim_mat.albedo_color = Color(0.2, 0.8, 0.4, 0.2)
 	character_dim_mat = dim_mat
 
-	# Also create a visible character model child for the marker
-	if character_index >= 0 and character_index < structures.size():
-		var char_model = structures[character_index].model.instantiate()
-		if char_model:
-			char_model.name = "CharPreview"
-			char_model.position = Vector3(0, 0.5, 0)
-			character_marker.add_child(char_model)
+	_update_character_preview()
 
 	delete_marker = MeshInstance3D.new()
-	delete_marker.mesh = BoxMesh.new()
-	delete_marker.mesh.size = Vector3(0.5, 0.5, 0.5)
 	delete_marker.visible = false
 	add_child(delete_marker)
-	var del_mat = StandardMaterial3D.new()
-	del_mat.albedo_color = Color(1, 0.2, 0.2, 0.5)
-	del_mat.transparency = StandardMaterial3D.TRANSPARENCY_ALPHA
-	delete_marker.set_surface_override_material(0, del_mat)
+	delete_marker_mat = StandardMaterial3D.new()
+	delete_marker_mat.albedo_color = Color(1, 0.2, 0.2, 0.35)
+	delete_marker_mat.transparency = StandardMaterial3D.TRANSPARENCY_ALPHA
 
 	canvas_layer = get_node("../CanvasLayer") as CanvasLayer
 	structures_btn.visible = false
@@ -128,6 +122,9 @@ func _ready():
 
 	update_structure()
 	update_cash()
+
+	if view_camera and view_camera.environment:
+		view_camera.environment.fog_enabled = false
 
 	if GameState.map_to_load:
 		call_deferred("_on_startup_load")
@@ -336,11 +333,33 @@ func _set_delete_mode(enabled: bool):
 	if enabled:
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
+func _update_character_preview():
+	for n in character_marker.get_children():
+		if n.name == "CharPreview":
+			character_marker.remove_child(n)
+			n.queue_free()
+			break
+	if character_indices.is_empty():
+		return
+	var idx = character_indices[character_index]
+	var char_model = structures[idx].model.instantiate()
+	if char_model:
+		char_model.name = "CharPreview"
+		char_model.position = Vector3(0, 0.5, 0)
+		character_marker.add_child(char_model)
+
+func _cycle_character(dir: int):
+	if character_indices.is_empty():
+		return
+	character_index = (character_index + dir + character_indices.size()) % character_indices.size()
+	_update_character_preview()
+
 func _set_character_mode(enabled: bool):
 	character_mode = enabled
 	character_marker.visible = enabled
 	selector.visible = not enabled and not delete_mode
 	if enabled:
+		_update_character_preview()
 		if map.character_position != Vector3.ZERO:
 			character_marker.position = map.character_position + Vector3(0, 0.5, 0)
 		# Restore full opacity material when actively placing
@@ -388,14 +407,34 @@ func _process(delta):
 	if delete_mode:
 		delete_cursor.position = mouse_pos
 		delete_cursor.queue_redraw()
-		var has_item = gridmap.get_cell_item(gridmap_position) != -1
-		if has_item and not (character_mode and map.character_position.distance_to(gridmap_position) < 1):
-			delete_marker.position = gridmap_position + Vector3(0, 0.5, 0)
-			delete_marker.visible = true
+		# Find the highest occupied cell at this X/Z position across all Y levels
+		var target_pos = Vector3(gridmap_position.x, -1, gridmap_position.z)
+		for y in range(10, -1, -1):
+			var check_pos = Vector3(gridmap_position.x, y, gridmap_position.z)
+			if gridmap.get_cell_item(check_pos) != -1:
+				target_pos = check_pos
+				break
+		var has_item = target_pos.y >= 0
+		if has_item and not (character_mode and map.character_position.distance_to(target_pos) < 1):
+			var item = gridmap.get_cell_item(target_pos)
+			if item >= 0:
+				var mesh = gridmap.mesh_library.get_item_mesh(item)
+				if mesh:
+					delete_marker.mesh = mesh
+					var xform = gridmap.mesh_library.get_item_mesh_transform(item)
+					delete_marker.scale = xform.basis.get_scale()
+					delete_marker.position = gridmap.map_to_local(target_pos)
+					for s in range(mesh.get_surface_count()):
+						delete_marker.set_surface_override_material(s, delete_marker_mat)
+					delete_marker.visible = true
+				else:
+					delete_marker.visible = false
+			else:
+				delete_marker.visible = false
 		else:
 			delete_marker.visible = false
-		if Input.is_action_just_pressed("build"):
-			gridmap.set_cell_item(gridmap_position, -1)
+		if has_item and Input.is_action_just_pressed("build"):
+			gridmap.set_cell_item(target_pos, -1)
 			Audio.play("sounds/removal-a.ogg, sounds/removal-b.ogg, sounds/removal-c.ogg, sounds/removal-d.ogg", -20)
 			auto_save()
 	elif character_mode:
@@ -479,7 +518,7 @@ func auto_save():
 		"cells": MapLoader.read_cells(gridmap, json_id_map)
 	}
 	if map.character_position != Vector3.ZERO:
-		map_data["character"] = {"x": map.character_position.x, "z": map.character_position.z}
+		map_data["character"] = {"x": map.character_position.x, "y": map.character_position.y, "z": map.character_position.z}
 	MapLoader.save_map(map_data, current_map_filename)
 
 func action_y_axis():
@@ -508,6 +547,10 @@ func update_structure():
 	var _model = ps.instantiate()
 	if not _model:
 		return
+	var sid_list = json_defs.keys()
+	var sid = sid_list[index]
+	var s = json_defs[sid].get("scale", 1.0)
+	_model.scale = Vector3(s, s, s)
 	selector_container.add_child(_model)
 	_model.position.y += 0.25
 
@@ -571,12 +614,12 @@ func _on_map_selected(filename: String):
 	MapLoader.place_cells(gridmap, map_data, json_id_map)
 	if map_data.has("character"):
 		var ch = map_data["character"]
-		map.character_position = Vector3(ch.get("x", 0), 0, ch.get("z", 0))
-	map.cash = map_data.get("cash", 10000)
-	character_mode = false
-	update_cash()
-	Audio.play("sounds/placement-a.ogg, sounds/placement-b.ogg", -20)
-	load_modal.hide()
+		map.character_position = Vector3(ch.get("x", 0), ch.get("y", 0), ch.get("z", 0))
+		map.cash = map_data.get("cash", 10000)
+		character_mode = false
+		update_cash()
+		Audio.play("sounds/placement-a.ogg, sounds/placement-b.ogg", -20)
+		load_modal.hide()
 
 func _on_load_modal_cancel():
 	Audio.play("sounds/toggle.ogg", -30)
@@ -593,7 +636,7 @@ func _on_save_modal_save(_text := ""):
 		"cells": MapLoader.read_cells(gridmap, json_id_map)
 	}
 	if map.character_position != Vector3.ZERO:
-		map_data["character"] = {"x": map.character_position.x, "z": map.character_position.z}
+		map_data["character"] = {"x": map.character_position.x, "y": map.character_position.y, "z": map.character_position.z}
 	MapLoader.save_map(map_data, filename)
 	current_map_filename = filename
 	print("Map saved as: " + filename)
@@ -613,18 +656,24 @@ func _input(event):
 		if event.keycode == KEY_BACKSPACE:
 			get_tree().change_scene_to_file("res://scenes/menu.tscn")
 			return
-		if event.keycode == KEY_Q and not character_mode and not delete_mode:
-			_cycle_structure(-1)
+		if event.keycode == KEY_Q and not delete_mode:
+			if character_mode:
+				_cycle_character(-1)
+			else:
+				_cycle_structure(-1)
 			return
-		if event.keycode == KEY_E and not character_mode and not delete_mode:
-			_cycle_structure(1)
+		if event.keycode == KEY_E and not delete_mode:
+			if character_mode:
+				_cycle_character(1)
+			else:
+				_cycle_structure(1)
 			return
 		if event.keycode == KEY_Z:
 			if struct_modal and struct_modal.visible:
 				return
 			if character_mode:
 				_set_character_mode(false)
-			else:
+			elif not character_indices.is_empty():
 				delete_mode = false
 				delete_cursor.visible = false
 				delete_marker.visible = false
@@ -633,6 +682,11 @@ func _input(event):
 		if event.keycode == KEY_R:
 			if not character_mode and not delete_mode:
 				selector.basis = selector.basis.rotated(Vector3.UP, deg_to_rad(90))
+			return
+		if event.keycode == KEY_F1:
+			fog_visible = not fog_visible
+			if view_camera and view_camera.environment:
+				view_camera.environment.fog_enabled = fog_visible
 			return
 
 	if event.is_action_pressed("ui_cancel"):
