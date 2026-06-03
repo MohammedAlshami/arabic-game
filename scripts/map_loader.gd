@@ -55,13 +55,25 @@ static func build_mesh_library(defs: Dictionary) -> MeshLibrary:
 		var entry = defs[key]
 		var ps = load(entry["model"])
 		var mesh = _get_mesh(ps)
+		var s = entry.get("scale", 1.0)
 		var item_id = lib.get_last_unused_item_id()
 		lib.create_item(item_id)
 		if mesh:
 			lib.set_item_mesh(item_id, mesh)
+			# Add collision shape matching the mesh bounds
+			var aabb = mesh.get_aabb()
+			var col_shape = BoxShape3D.new()
+			var size = aabb.size * s
+			if size.length() < 0.01:
+				size = Vector3(0.5, 0.5, 0.5)
+			col_shape.size = size
+			lib.set_item_shapes(item_id, [col_shape])
 		else:
 			lib.set_item_mesh(item_id, box)
-		var s = entry.get("scale", 1.0)
+			var col_shape = BoxShape3D.new()
+			col_shape.size = Vector3(0.5, 0.5, 0.5)
+			lib.set_item_shapes(item_id, [col_shape])
+		s = entry.get("scale", 1.0)
 		if s != 1.0:
 			var t = Transform3D()
 			t = t.scaled(Vector3(s, s, s))
@@ -79,7 +91,7 @@ static func place_cells(gridmap: GridMap, map_data: Dictionary, id_map: Dictiona
 		var sid = cell["id"]
 		var item = id_map.get(sid, -1)
 		if item >= 0:
-			var pos = Vector3i(cell.get("x", 0), 0, cell.get("z", 0))
+			var pos = Vector3i(cell.get("x", 0), cell.get("y", 0), cell.get("z", 0))
 			var orient = cell.get("orient", 0)
 			gridmap.set_cell_item(pos, item, orient)
 
@@ -96,6 +108,7 @@ static func read_cells(gridmap: GridMap, id_map: Dictionary) -> Array:
 			cells.append({
 				"id": sid,
 				"x": cell_pos.x,
+				"y": cell_pos.y,
 				"z": cell_pos.z,
 				"orient": gridmap.get_cell_item_orientation(cell_pos)
 			})

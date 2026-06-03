@@ -38,6 +38,7 @@ var delete_mode := false
 var delete_cursor: Control = null
 var delete_cursor_tex: Texture2D = null
 var delete_marker: MeshInstance3D = null
+var character_dim_mat: Material = null
 
 var json_defs: Dictionary = {}
 var json_id_map: Dictionary = {}
@@ -69,7 +70,7 @@ func _ready():
 	var mesh_library = MeshLibrary.new()
 	var box = BoxMesh.new()
 	box.size = Vector3(0.5, 0.5, 0.5)
-	var sid_list = json_defs.keys()
+	sid_list = json_defs.keys()
 	for i in sid_list.size():
 		var sid = sid_list[i]
 		var entry = json_defs[sid]
@@ -97,8 +98,19 @@ func _ready():
 	character_marker.visible = false
 	add_child(character_marker)
 	var mat = StandardMaterial3D.new()
-	mat.albedo_color = Color(0.2, 0.8, 0.4, 1)
+	mat.albedo_color = Color(0.2, 0.8, 0.4, 0.6)
 	character_marker.set_surface_override_material(0, mat)
+	var dim_mat = StandardMaterial3D.new()
+	dim_mat.albedo_color = Color(0.2, 0.8, 0.4, 0.2)
+	character_dim_mat = dim_mat
+
+	# Also create a visible character model child for the marker
+	if character_index >= 0 and character_index < structures.size():
+		var char_model = structures[character_index].model.instantiate()
+		if char_model:
+			char_model.name = "CharPreview"
+			char_model.position = Vector3(0, 0.5, 0)
+			character_marker.add_child(char_model)
 
 	delete_marker = MeshInstance3D.new()
 	delete_marker.mesh = BoxMesh.new()
@@ -119,10 +131,13 @@ func _ready():
 	update_cash()
 
 	if GameState.map_to_load:
-		_on_map_selected(GameState.map_to_load)
-		GameState.map_to_load = ""
+		call_deferred("_on_startup_load")
 
 	modal_save_btn.pressed.connect(_on_save_modal_save)
+
+func _on_startup_load():
+	_on_map_selected(GameState.map_to_load)
+	GameState.map_to_load = ""
 	modal_cancel_btn.pressed.connect(_on_save_modal_cancel)
 	modal_name_input.text_submitted.connect(_on_save_modal_save)
 	load_cancel_btn.pressed.connect(_on_load_modal_cancel)
@@ -131,30 +146,15 @@ func build_categories():
 	categories = {
 		"Buildings": [],
 		"Nature": [],
-		"Platforms": [],
-		"Items": [],
-		"Animals": [],
-		"Tracks": [],
-		"Vehicles": [],
 	}
 
 	var sid_list = json_defs.keys()
 	for i in sid_list.size():
 		var sid = sid_list[i]
-		if sid.begins_with("animal-"):
-			categories["Animals"].append(i)
-		elif sid.begins_with("track-") or sid.begins_with("decoration-"):
-			categories["Tracks"].append(i)
-		elif sid.begins_with("vehicle-"):
-			categories["Vehicles"].append(i)
-		elif sid.begins_with("building-") or sid.begins_with("road-") or sid.begins_with("pavement-"):
+		if sid.begins_with("building-") or sid.begins_with("road-") or sid.begins_with("pavement-"):
 			categories["Buildings"].append(i)
 		elif sid.begins_with("grass-") or sid == "grass":
 			categories["Nature"].append(i)
-		elif sid.begins_with("platform-"):
-			categories["Platforms"].append(i)
-		elif sid in ["coin", "flag"]:
-			categories["Items"].append(i)
 
 func build_struct_modal():
 	struct_modal = Control.new()
@@ -233,9 +233,7 @@ func build_struct_modal():
 
 	var preview_size := 180
 
-	var tab_order := ["Buildings", "Nature", "Platforms", "Items", "Tracks", "Animals", "Vehicles"]
-	if character_index >= 0:
-		tab_order.push_front("Character")
+	var tab_order := ["Buildings", "Nature"]
 
 	for cat_name in tab_order:
 		var scroll = ScrollContainer.new()
@@ -248,11 +246,7 @@ func build_struct_modal():
 		grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		scroll.add_child(grid)
 
-		var indices = []
-		if cat_name == "Character" and character_index >= 0:
-			indices = [character_index]
-		else:
-			indices = categories.get(cat_name, [])
+		var indices = categories.get(cat_name, [])
 
 		for idx in indices:
 			var s = structures[idx]
@@ -281,9 +275,7 @@ func build_struct_modal():
 			name_label.add_theme_font_size_override("font_size", 12)
 
 			var i = idx
-			texture_rect.gui_input.connect(func(event):
-				if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-					_select_structure(i))
+			texture_rect.gui_input.connect(_on_item_clicked.bind(i))
 
 			item_container.add_child(texture_rect)
 			item_container.add_child(name_label)
@@ -339,6 +331,18 @@ func _set_delete_mode(enabled: bool):
 	if enabled:
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
+func _set_character_mode(enabled: bool):
+	character_mode = enabled
+	character_marker.visible = enabled
+	selector.visible = not enabled and not delete_mode
+	if enabled:
+		if map.character_position != Vector3.ZERO:
+			character_marker.position = map.character_position + Vector3(0, 0.5, 0)
+		# Restore full opacity material when actively placing
+		var mat = StandardMaterial3D.new()
+		mat.albedo_color = Color(0.2, 0.8, 0.4, 0.6)
+		character_marker.set_surface_override_material(0, mat)
+
 func _open_struct_modal():
 	struct_modal.visible = true
 
@@ -349,19 +353,16 @@ func _on_struct_overlay_click(event):
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		_close_struct_modal()
 
+func _on_item_clicked(event: InputEvent, idx: int):
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_select_structure(idx)
+
 func _select_structure(idx: int):
-	if idx == character_index:
-		character_mode = true
-		character_marker.visible = true
-		if map.character_position != Vector3.ZERO:
-			character_marker.position = map.character_position + Vector3(0, 0.5, 0)
-		selector.visible = false
-	else:
-		character_mode = false
-		character_marker.visible = false
-		selector.visible = true
-		index = idx
-		update_structure()
+	character_mode = false
+	character_marker.visible = false
+	selector.visible = true
+	index = idx
+	update_structure()
 	_close_struct_modal()
 
 func _process(delta):
@@ -391,6 +392,7 @@ func _process(delta):
 		if Input.is_action_just_pressed("build"):
 			gridmap.set_cell_item(gridmap_position, -1)
 			Audio.play("sounds/removal-a.ogg, sounds/removal-b.ogg, sounds/removal-c.ogg, sounds/removal-d.ogg", -20)
+			auto_save()
 	elif character_mode:
 		character_marker.position = lerp(character_marker.position, gridmap_position + Vector3(0, 0.5, 0), min(delta * 40, 1.0))
 		action_place_character(gridmap_position)
@@ -436,17 +438,18 @@ func action_build(gridmap_position):
 			map.cash -= structures[index].price
 			update_cash()
 			Audio.play("sounds/placement-a.ogg, sounds/placement-b.ogg, sounds/placement-c.ogg, sounds/placement-d.ogg", -20)
+			auto_save()
 
 func action_place_character(gridmap_position):
 	if Input.is_action_just_pressed("build"):
-		if map.character_position != Vector3.ZERO:
-			return
 		map.character_position = gridmap_position
 		character_marker.position = gridmap_position + Vector3(0, 0.5, 0)
 		character_mode = false
-		character_marker.visible = false
 		selector.visible = true
+		if character_dim_mat:
+			character_marker.set_surface_override_material(0, character_dim_mat)
 		Audio.play("sounds/placement-a.ogg, sounds/placement-b.ogg", -20)
+		auto_save()
 
 func action_demolish(gridmap_position):
 	if delete_mode:
@@ -460,6 +463,19 @@ func action_demolish(gridmap_position):
 		if gridmap.get_cell_item(gridmap_position) != -1:
 			gridmap.set_cell_item(gridmap_position, -1)
 			Audio.play("sounds/removal-a.ogg, sounds/removal-b.ogg, sounds/removal-c.ogg, sounds/removal-d.ogg", -20)
+			auto_save()
+
+func auto_save():
+	if current_map_filename.is_empty():
+		return
+	var map_data = {
+		"title": current_map_filename.get_basename().replace("_", " "),
+		"cash": map.cash,
+		"cells": MapLoader.read_cells(gridmap, json_id_map)
+	}
+	if map.character_position != Vector3.ZERO:
+		map_data["character"] = {"x": map.character_position.x, "z": map.character_position.z}
+	MapLoader.save_map(map_data, current_map_filename)
 
 func action_y_axis():
 	if Input.is_action_just_pressed("y_up"):
@@ -578,6 +594,21 @@ func _input(event):
 		if event.keycode == KEY_BACKSPACE:
 			get_tree().change_scene_to_file("res://scenes/menu.tscn")
 			return
+		if event.keycode == KEY_Z:
+			if struct_modal and struct_modal.visible:
+				return
+			if character_mode:
+				_set_character_mode(false)
+			else:
+				delete_mode = false
+				delete_cursor.visible = false
+				delete_marker.visible = false
+				_set_character_mode(true)
+			return
+		if event.keycode == KEY_R:
+			if not character_mode and not delete_mode:
+				selector.basis = selector.basis.rotated(Vector3.UP, deg_to_rad(90))
+			return
 
 	if event.is_action_pressed("ui_cancel"):
 		if struct_modal and struct_modal.visible:
@@ -585,9 +616,7 @@ func _input(event):
 		elif delete_mode:
 			_set_delete_mode(false)
 		elif character_mode:
-			character_mode = false
-			character_marker.visible = false
-			selector.visible = true
+			_set_character_mode(false)
 		elif modal.visible:
 			_on_save_modal_cancel()
 		elif load_modal.visible:

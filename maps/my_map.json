@@ -1,0 +1,87 @@
+{
+	"cash": 8980,
+	"cells": [
+		{
+			"id": "road-straight",
+			"orient": 0,
+			"x": -1,
+			"y": 0,
+			"z": -3
+		},
+		{
+			"id": "road-straight",
+			"orient": 0,
+			"x": -1,
+			"y": 0,
+			"z": 0
+		},
+		{
+			"id": "road-straight",
+			"orient": 0,
+			"x": -1,
+			"y": 0,
+			"z": -2
+		},
+		{
+			"id": "road-straight",
+			"orient": 0,
+			"x": -1,
+			"y": 0,
+			"z": -1
+		},
+		{
+			"id": "road-straight",
+			"orient": 0,
+			"x": -1,
+			"y": 0,
+			"z": 2
+		},
+		{
+			"id": "road-straight",
+			"orient": 0,
+			"x": -1,
+			"y": 0,
+			"z": 4
+		},
+		{
+			"id": "road-straight",
+			"orient": 0,
+			"x": -1,
+			"y": 0,
+			"z": -5
+		},
+		{
+			"id": "building-small-c",
+			"orient": 16,
+			"x": -3,
+			"y": 0,
+			"z": -5
+		},
+		{
+			"id": "building-small-c",
+			"orient": 16,
+			"x": -3,
+			"y": 0,
+			"z": -2
+		},
+		{
+			"id": "building-small-c",
+			"orient": 22,
+			"x": 1,
+			"y": 0,
+			"z": -4
+		},
+		{
+			"id": "building-small-c",
+			"orient": 22,
+			"x": 1,
+			"y": 0,
+			"z": -2
+		}
+	],
+	"character": {
+		"x": -1.0,
+		"z": 1.0
+	},
+	"title": "my map"
+}
