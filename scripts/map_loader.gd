@@ -86,7 +86,7 @@ static func place_cells(gridmap: GridMap, map_data: Dictionary, id_map: Dictiona
 			gridmap.set_cell_item(pos, item, orient)
 
 # Get cells from a GridMap back into map format using reverse id_map
-static func read_cells(gridmap: GridMap, id_map: Dictionary) -> Array:
+static func read_cells(gridmap: GridMap, id_map: Dictionary, position_config: Dictionary = {}) -> Array:
 	var rev_map = {}
 	for key in id_map:
 		rev_map[id_map[key]] = key
@@ -95,13 +95,19 @@ static func read_cells(gridmap: GridMap, id_map: Dictionary) -> Array:
 		var item = gridmap.get_cell_item(cell_pos)
 		var sid = rev_map.get(item, "")
 		if sid != "":
-			cells.append({
+			var entry = {
 				"id": sid,
 				"x": cell_pos.x,
 				"y": cell_pos.y,
 				"z": cell_pos.z,
 				"orient": gridmap.get_cell_item_orientation(cell_pos)
-			})
+			}
+			var cell_key = "%d,%d,%d" % [cell_pos.x, cell_pos.y, cell_pos.z]
+			if position_config.has(cell_key):
+				var pdata = position_config[cell_key]
+				if pdata.has("interactions") and not pdata["interactions"].is_empty():
+					entry["interactions"] = pdata["interactions"]
+			cells.append(entry)
 	return cells
 
 static func _get_mesh(packed_scene):

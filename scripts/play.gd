@@ -26,8 +26,21 @@ var unsaved_changes: bool = false
 var save_timer: float = 0.0
 var fog_visible := false
 
+var interaction_data: Dictionary = {}
+var interaction_popup: Control = null
+var crosshair: Control = null
+
+var play_plane: Plane
+var hover_marker: MeshInstance3D = null
+var hover_marker_mat: Material = null
+var hovered_cell_key: String = ""
+
 func _ready():
+	play_plane = Plane(Vector3.UP, Vector3.ZERO)
 	load_map()
+	_build_interaction_popup()
+	_build_crosshair()
+	_build_hover_marker()
 
 func load_map():
 	filename = GameState.map_to_load
@@ -49,6 +62,13 @@ func load_map():
 	id_map = mesh_lib.get_meta("id_map")
 	grass_block_id = id_map.get("block-grass", -1)
 	MapLoader.place_cells(gridmap, map_data, id_map)
+
+	# Load interaction data from map cells
+	interaction_data = {}
+	for cell in map_data.get("cells", []):
+		if cell.has("interactions"):
+			var ck = "%d,%d,%d" % [cell.get("x", 0), cell.get("y", 0), cell.get("z", 0)]
+			interaction_data[ck] = {"interactions": cell["interactions"]}
 
 	for cell_pos in gridmap.get_used_cells():
 		bounds_min.x = mini(bounds_min.x, cell_pos.x)
@@ -133,6 +153,9 @@ func _spawn_player(pos: Vector3):
 	add_child(player)
 
 func _unhandled_input(event):
+	if event.is_action_pressed("build"):
+		_try_interact()
+		return
 	if event.is_action_pressed("ui_cancel"):
 		get_tree().change_scene_to_file("res://scenes/menu.tscn")
 		return
@@ -147,6 +170,10 @@ func _unhandled_input(event):
 			var env_node = $WorldEnvironment
 			if env_node and env_node.environment:
 				env_node.environment.fog_enabled = fog_visible
+			return
+		if event.keycode == KEY_F5:
+			if view and view.has_method("toggle_view_mode"):
+				view.toggle_view_mode()
 			return
 
 func _try_sleep():
@@ -275,3 +302,284 @@ func _save_map():
 	map_data["cells"] = cells
 	MapLoader.save_map(map_data, filename)
 	unsaved_changes = false
+
+func _build_interaction_popup():
+	var canvas_layer = CanvasLayer.new()
+	canvas_layer.name = "InteractionCanvas"
+	add_child(canvas_layer)
+
+	interaction_popup = Control.new()
+	interaction_popup.visible = false
+	interaction_popup.layout_mode = 3
+	interaction_popup.anchors_preset = Control.PRESET_FULL_RECT
+	interaction_popup.mouse_filter = Control.MOUSE_FILTER_STOP
+	canvas_layer.add_child(interaction_popup)
+
+	var overlay = ColorRect.new()
+	overlay.color = Color(0, 0, 0, 0.5)
+	overlay.anchors_preset = Control.PRESET_FULL_RECT
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	interaction_popup.add_child(overlay)
+
+	var panel = Panel.new()
+	panel.layout_mode = 3
+	panel.anchors_preset = Control.PRESET_CENTER
+	panel.offset_left = -150
+	panel.offset_top = -120
+	panel.offset_right = 150
+	panel.offset_bottom = 120
+	var panel_style = StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.15, 0.12, 0.1, 0.95)
+	panel_style.border_width_left = 3
+	panel_style.border_width_top = 3
+	panel_style.border_width_right = 3
+	panel_style.border_width_bottom = 3
+	panel_style.border_color = Color(0.35, 0.28, 0.2, 1)
+	panel_style.corner_radius_top_left = 8
+	panel_style.corner_radius_top_right = 8
+	panel_style.corner_radius_bottom_left = 8
+	panel_style.corner_radius_bottom_right = 8
+	panel.add_theme_stylebox_override("panel", panel_style)
+	interaction_popup.add_child(panel)
+
+	var title = Label.new()
+	title.text = "Choose an option:"
+	title.position = Vector2(20, 16)
+	title.size = Vector2(260, 30)
+	title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	title.add_theme_font_size_override("font_size", 18)
+	panel.add_child(title)
+
+	interaction_popup.set_meta("panel", panel)
+	interaction_popup.set_meta("title", title)
+
+func _build_crosshair():
+	var canvas = null
+	for c in get_children():
+		if c is CanvasLayer:
+			canvas = c
+			break
+	if not canvas:
+		return
+
+	crosshair = Control.new()
+	crosshair.visible = true
+	crosshair.layout_mode = 3
+	crosshair.anchors_preset = Control.PRESET_FULL_RECT
+	crosshair.mouse_filter = Control.MOUSE_FILTER_PASS
+	canvas.add_child(crosshair)
+
+	var size := 24.0
+	var thickness := 3.0
+	var gap := 6.0
+	var half := size / 2.0 + gap / 2.0
+	var color = Color(1, 1, 0, 0.9)
+
+	var h_left = ColorRect.new()
+	h_left.color = color
+	h_left.layout_mode = 0
+	h_left.size = Vector2(size, thickness)
+	h_left.set_meta("base_pos", Vector2(-half - size, -thickness / 2.0))
+	crosshair.add_child(h_left)
+
+	var h_right = ColorRect.new()
+	h_right.color = color
+	h_right.layout_mode = 0
+	h_right.size = Vector2(size, thickness)
+	h_right.set_meta("base_pos", Vector2(half, -thickness / 2.0))
+	crosshair.add_child(h_right)
+
+	var v_top = ColorRect.new()
+	v_top.color = color
+	v_top.layout_mode = 0
+	v_top.size = Vector2(thickness, size)
+	v_top.set_meta("base_pos", Vector2(-thickness / 2.0, -half - size))
+	crosshair.add_child(v_top)
+
+	var v_bottom = ColorRect.new()
+	v_bottom.color = color
+	v_bottom.layout_mode = 0
+	v_bottom.size = Vector2(thickness, size)
+	v_bottom.set_meta("base_pos", Vector2(-thickness / 2.0, half))
+	crosshair.add_child(v_bottom)
+
+	var dot = ColorRect.new()
+	dot.color = Color(1, 0, 0, 0.8)
+	dot.layout_mode = 0
+	dot.size = Vector2(4, 4)
+	dot.set_meta("base_pos", Vector2(-2, -2))
+	crosshair.add_child(dot)
+
+func _build_hover_marker():
+	hover_marker = MeshInstance3D.new()
+	hover_marker.visible = false
+	add_child(hover_marker)
+	hover_marker_mat = StandardMaterial3D.new()
+	hover_marker_mat.albedo_color = Color(1, 1, 0.2, 0.35)
+	hover_marker_mat.transparency = StandardMaterial3D.TRANSPARENCY_ALPHA
+
+func _process(delta):
+	_update_crosshair()
+	_raycast_hover()
+
+func _update_crosshair():
+	if not crosshair or not get_viewport():
+		return
+	var mouse_pos = get_viewport().get_mouse_position()
+	for c in crosshair.get_children():
+		if c is ColorRect:
+			var base = c.get_meta("base_pos", Vector2())
+			c.position = mouse_pos + base
+
+func _raycast_hover():
+	if not gridmap or not get_viewport():
+		hover_marker.visible = false
+		return
+	if interaction_popup and interaction_popup.visible:
+		hover_marker.visible = false
+		return
+
+	var cam = get_viewport().get_camera_3d()
+	if not cam:
+		hover_marker.visible = false
+		return
+
+	var mouse_pos = get_viewport().get_mouse_position()
+	var space = get_world_3d().direct_space_state
+
+	# Try physics raycast first
+	var hit_cell = Vector3()
+	var found = false
+	if space:
+		var origin = cam.project_ray_origin(mouse_pos)
+		var end = origin + cam.project_ray_normal(mouse_pos) * 200.0
+		var query = PhysicsRayQueryParameters3D.create(origin, end)
+		query.collide_with_areas = false
+		query.collide_with_bodies = true
+		var result = space.intersect_ray(query)
+		if not result.is_empty():
+			var hit_pos = result.get("position", Vector3())
+			var cell = gridmap.local_to_map(hit_pos)
+			hit_cell = Vector3(cell.x, cell.y, cell.z)
+			if gridmap.get_cell_item(hit_cell) != -1:
+				found = true
+
+	# Fallback: plane projection + broad search
+	if not found:
+		var origin = cam.project_ray_origin(mouse_pos)
+		var normal = cam.project_ray_normal(mouse_pos)
+		var plane = Plane(Vector3.UP, Vector3.ZERO)
+		var world_pos = plane.intersects_ray(origin, normal)
+		if world_pos != null:
+			hit_cell = Vector3(round(world_pos.x), 0, round(world_pos.z))
+			# Search all Y levels at this XZ
+			for y in range(10, -1, -1):
+				var check = Vector3(hit_cell.x, y, hit_cell.z)
+				if gridmap.get_cell_item(check) != -1:
+					hit_cell = check
+					found = true
+					break
+
+	# Broad search around hit cell if still not found
+	if not found:
+		var base = Vector3(round(hit_cell.x), 0, round(hit_cell.z)) if hit_cell != Vector3() else Vector3()
+		for dx in range(-2, 3):
+			for dz in range(-2, 3):
+				for dy in range(10, -1, -1):
+					var check = Vector3(base.x + dx, dy, base.z + dz)
+					if gridmap.get_cell_item(check) != -1:
+						hit_cell = check
+						found = true
+						break
+				if found:
+					break
+			if found:
+				break
+
+	var ck = "%d,%d,%d" % [hit_cell.x, hit_cell.y, hit_cell.z]
+	if found and interaction_data.has(ck) and interaction_data[ck].get("interactions", []).size() > 0:
+		var item = gridmap.get_cell_item(hit_cell)
+		if item >= 0:
+			var mesh = gridmap.mesh_library.get_item_mesh(item)
+			if mesh:
+				hover_marker.mesh = mesh
+				var xform = gridmap.mesh_library.get_item_mesh_transform(item)
+				hover_marker.scale = xform.basis.get_scale()
+				hover_marker.position = gridmap.map_to_local(hit_cell)
+				for s in range(mesh.get_surface_count()):
+					hover_marker.set_surface_override_material(s, hover_marker_mat)
+				hover_marker.visible = true
+				hovered_cell_key = ck
+			else:
+				hover_marker.visible = false
+				hovered_cell_key = ""
+		else:
+			hover_marker.visible = false
+			hovered_cell_key = ""
+	else:
+		hover_marker.visible = false
+		hovered_cell_key = ""
+
+func _set_interaction_paused(paused: bool):
+	if player:
+		player.set_process(not paused)
+		player.set_physics_process(not paused)
+	if view and view.has_method("set_input_paused"):
+		view.input_paused = paused
+	if paused:
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+
+func _show_interaction_popup(interactions: Array):
+	if not interaction_popup or interactions.is_empty():
+		return
+	var panel = interaction_popup.get_meta("panel")
+	for child in panel.get_children():
+		if child is Button:
+			child.queue_free()
+	_set_interaction_paused(true)
+
+	var y_start = 56
+	for i in range(interactions.size()):
+		var data = interactions[i]
+		var btn = Button.new()
+		btn.text = "%s ($%d)" % [data.get("label", "Option"), data.get("reward", 0)]
+		btn.position = Vector2(20, y_start + i * 50)
+		btn.size = Vector2(260, 40)
+		btn.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+		btn.pressed.connect(func():
+			_give_interaction_reward(data)
+		)
+		panel.add_child(btn)
+
+	var close_btn = Button.new()
+	close_btn.text = "Close"
+	close_btn.position = Vector2(100, y_start + interactions.size() * 50 + 10)
+	close_btn.size = Vector2(100, 30)
+	close_btn.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	close_btn.pressed.connect(func():
+		interaction_popup.visible = false
+		_set_interaction_paused(false)
+	)
+	panel.add_child(close_btn)
+
+	interaction_popup.visible = true
+
+func _give_interaction_reward(data: Dictionary):
+	var reward = data.get("reward", 0)
+	if player and player.has_method("collect_coin"):
+		for _i in range(reward):
+			player.collect_coin()
+	interaction_popup.visible = false
+	_set_interaction_paused(false)
+
+func _try_interact():
+	if not gridmap or not player:
+		return
+	if interaction_popup and interaction_popup.visible:
+		interaction_popup.visible = false
+		return
+	if not hovered_cell_key.is_empty() and interaction_data.has(hovered_cell_key):
+		var data = interaction_data[hovered_cell_key]
+		if data.has("interactions") and not data["interactions"].is_empty():
+			_show_interaction_popup(data["interactions"])
+			return

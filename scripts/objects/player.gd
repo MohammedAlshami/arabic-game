@@ -118,7 +118,8 @@ func handle_controls(delta):
 	if input.length() > 1:
 		input = input.normalized()
 
-	movement_velocity = input * movement_speed * delta
+	var speed_mult = 2.0 if Input.is_key_pressed(KEY_SHIFT) else 1.0
+	movement_velocity = input * movement_speed * speed_mult * delta
 
 	# Jumping
 

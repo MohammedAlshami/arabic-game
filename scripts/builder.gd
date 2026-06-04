@@ -40,6 +40,14 @@ var delete_cursor: Control = null
 var delete_cursor_tex: Texture2D = null
 var delete_marker: MeshInstance3D = null
 var delete_marker_mat: Material = null
+
+var position_mode := false
+var position_marker: MeshInstance3D = null
+var position_marker_mat: Material = null
+var position_target_cell: Vector3
+var position_config_data: Dictionary = {}
+var position_modal_open := false
+
 var character_dim_mat: Material = null
 
 var json_defs: Dictionary = {}
@@ -115,6 +123,13 @@ func _ready():
 	delete_marker_mat = StandardMaterial3D.new()
 	delete_marker_mat.albedo_color = Color(1, 0.2, 0.2, 0.35)
 	delete_marker_mat.transparency = StandardMaterial3D.TRANSPARENCY_ALPHA
+
+	position_marker = MeshInstance3D.new()
+	position_marker.visible = false
+	add_child(position_marker)
+	position_marker_mat = StandardMaterial3D.new()
+	position_marker_mat.albedo_color = Color(1, 1, 0.2, 0.35)
+	position_marker_mat.transparency = StandardMaterial3D.TRANSPARENCY_ALPHA
 
 	canvas_layer = get_node("../CanvasLayer") as CanvasLayer
 	structures_btn.visible = false
@@ -326,12 +341,244 @@ func _on_delete_cursor_draw():
 	delete_cursor.draw_texture_rect(delete_cursor_tex, rect, false, Color(1, 1, 1, 0.8))
 
 func _set_delete_mode(enabled: bool):
+	if enabled:
+		_set_position_mode(false)
 	delete_mode = enabled
 	delete_cursor.visible = enabled
 	delete_marker.visible = false
-	selector.visible = not enabled and not character_mode
+	selector.visible = not enabled and not character_mode and not position_mode
 	if enabled:
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+
+func _set_position_mode(enabled: bool):
+	if enabled:
+		_set_delete_mode(false)
+	position_mode = enabled
+	position_marker.visible = false
+	selector.visible = not enabled and not delete_mode and not character_mode
+	if enabled:
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+
+func _check_position_hover(gridmap_position: Vector3):
+	if position_modal_open:
+		return
+	var has_building = false
+	var target_cell = Vector3(gridmap_position.x, -1, gridmap_position.z)
+	for y in range(10, -1, -1):
+		var check_pos = Vector3(gridmap_position.x, y, gridmap_position.z)
+		if gridmap.get_cell_item(check_pos) != -1:
+			target_cell = check_pos
+			has_building = true
+			break
+	if has_building:
+		var item = gridmap.get_cell_item(target_cell)
+		if item >= 0:
+			var mesh = gridmap.mesh_library.get_item_mesh(item)
+			if mesh:
+				position_marker.mesh = mesh
+				var xform = gridmap.mesh_library.get_item_mesh_transform(item)
+				position_marker.scale = xform.basis.get_scale()
+				position_marker.position = gridmap.map_to_local(target_cell)
+				for s in range(mesh.get_surface_count()):
+					position_marker.set_surface_override_material(s, position_marker_mat)
+				position_marker.visible = true
+				position_target_cell = target_cell
+			else:
+				position_marker.visible = false
+		else:
+			position_marker.visible = false
+	else:
+		position_marker.visible = false
+	if has_building and Input.is_action_just_pressed("build"):
+		_open_position_modal(target_cell)
+
+func _open_position_modal(cell: Vector3):
+	if position_modal_open:
+		return
+	position_modal_open = true
+	var cell_key = "%d,%d,%d" % [cell.x, cell.y, cell.z]
+	var existing = position_config_data.get(cell_key, {})
+	var sid = _get_sid_at_cell(cell)
+
+	# Build the modal UI
+	var modal_control = Control.new()
+	modal_control.visible = true
+	modal_control.layout_mode = 3
+	modal_control.anchors_preset = Control.PRESET_FULL_RECT
+	modal_control.mouse_filter = Control.MOUSE_FILTER_STOP
+	if canvas_layer:
+		canvas_layer.add_child(modal_control)
+	else:
+		add_child(modal_control)
+
+	var overlay = ColorRect.new()
+	overlay.color = Color(0, 0, 0, 0.6)
+	overlay.anchors_preset = Control.PRESET_FULL_RECT
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.gui_input.connect(func(event):
+		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+			position_modal_open = false
+			modal_control.queue_free()
+	)
+	modal_control.add_child(overlay)
+
+	var panel = Panel.new()
+	panel.layout_mode = 3
+	panel.anchors_preset = Control.PRESET_CENTER
+	panel.offset_left = -200
+	panel.offset_top = -200
+	panel.offset_right = 200
+	panel.offset_bottom = 200
+	var panel_style = StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.15, 0.12, 0.1, 0.95)
+	panel_style.border_width_left = 3
+	panel_style.border_width_top = 3
+	panel_style.border_width_right = 3
+	panel_style.border_width_bottom = 3
+	panel_style.border_color = Color(0.35, 0.28, 0.2, 1)
+	panel_style.corner_radius_top_left = 8
+	panel_style.corner_radius_top_right = 8
+	panel_style.corner_radius_bottom_left = 8
+	panel_style.corner_radius_bottom_right = 8
+	panel.add_theme_stylebox_override("panel", panel_style)
+	modal_control.add_child(panel)
+
+	var title = Label.new()
+	title.text = "Position Options"
+	title.position = Vector2(20, 16)
+	title.size = Vector2(360, 36)
+	title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	title.add_theme_font_size_override("font_size", 22)
+	panel.add_child(title)
+
+	var pos_label = Label.new()
+	pos_label.text = "Cell: %s" % cell_key
+	pos_label.position = Vector2(20, 54)
+	pos_label.size = Vector2(360, 20)
+	pos_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 1))
+	pos_label.add_theme_font_size_override("font_size", 14)
+	panel.add_child(pos_label)
+
+	var sid_label = Label.new()
+	sid_label.text = "Building: %s" % sid
+	sid_label.position = Vector2(20, 74)
+	sid_label.size = Vector2(360, 20)
+	sid_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 1))
+	sid_label.add_theme_font_size_override("font_size", 14)
+	panel.add_child(sid_label)
+
+	var line = ColorRect.new()
+	line.color = Color(0.4, 0.4, 0.4, 1)
+	line.position = Vector2(20, 100)
+	line.size = Vector2(360, 1)
+	panel.add_child(line)
+
+	# Interaction options
+	var interactions = existing.get("interactions", [])
+	var option_rows = []
+	var option_keys = ["building", "car", "tree"]
+	var option_labels = ["Building", "Car", "Tree"]
+
+	for i in 3:
+		var row = VBoxContainer.new()
+		row.position = Vector2(20, 112 + i * 60)
+		row.size = Vector2(360, 54)
+		panel.add_child(row)
+
+		var row_h = HBoxContainer.new()
+		row_h.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(row_h)
+
+		var lbl = Label.new()
+		lbl.text = option_labels[i]
+		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		lbl.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+		lbl.custom_minimum_size = Vector2(100, 30)
+		row_h.add_child(lbl)
+
+		var reward_field = SpinBox.new()
+		reward_field.name = "RewardField_%s" % option_keys[i]
+		reward_field.min_value = 0
+		reward_field.max_value = 9999
+		reward_field.step = 1
+		reward_field.value = 0
+		reward_field.custom_minimum_size = Vector2(80, 30)
+		for ei in interactions:
+			if ei.get("key", "") == option_keys[i]:
+				reward_field.value = ei.get("reward", 0)
+				break
+		row_h.add_child(reward_field)
+
+		var enable_btn = CheckButton.new()
+		enable_btn.name = "EnableBtn_%s" % option_keys[i]
+		enable_btn.text = "Enabled"
+		enable_btn.button_pressed = false
+		for ei in interactions:
+			if ei.get("key", "") == option_keys[i]:
+				enable_btn.button_pressed = true
+				break
+		row_h.add_child(enable_btn)
+
+		option_rows.append({"key": option_keys[i], "field": reward_field, "btn": enable_btn})
+
+	var btn_save = Button.new()
+	btn_save.text = "Save"
+	btn_save.position = Vector2(40, 320)
+	btn_save.size = Vector2(140, 36)
+	btn_save.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	panel.add_child(btn_save)
+
+	var btn_cancel = Button.new()
+	btn_cancel.text = "Cancel"
+	btn_cancel.position = Vector2(220, 320)
+	btn_cancel.size = Vector2(140, 36)
+	btn_cancel.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	panel.add_child(btn_cancel)
+
+	btn_save.pressed.connect(func():
+		var saved_interactions = []
+		for row in option_rows:
+			if row["btn"].button_pressed:
+				saved_interactions.append({
+					"key": row["key"],
+					"label": option_labels[option_keys.find(row["key"])],
+					"reward": int(row["field"].value)
+				})
+		var mcell = {
+			"interactions": saved_interactions
+		}
+		position_config_data[cell_key] = mcell
+		_save_position_data_to_cell(cell, saved_interactions)
+		position_modal_open = false
+		modal_control.queue_free()
+	)
+
+	btn_cancel.pressed.connect(func():
+		position_modal_open = false
+		modal_control.queue_free()
+	)
+
+func _get_sid_at_cell(cell: Vector3) -> String:
+	var item = gridmap.get_cell_item(cell)
+	if item < 0:
+		return ""
+	var rev_map = {}
+	for key in json_id_map:
+		rev_map[json_id_map[key]] = key
+	return rev_map.get(item, "")
+
+func _save_position_data_to_cell(cell: Vector3, interactions: Array):
+	var rev_map = {}
+	for key in json_id_map:
+		rev_map[json_id_map[key]] = key
+	var sid = _get_sid_at_cell(cell)
+	if sid.is_empty():
+		return
+	# Find the cell in the cells loaded from map and update it
+	# We track cells via a dictionary keyed by position
+	var cell_key = "%d,%d,%d" % [cell.x, cell.y, cell.z]
+	position_config_data[cell_key] = {"interactions": interactions}
+	auto_save()
 
 func _update_character_preview():
 	for n in character_marker.get_children():
@@ -355,9 +602,11 @@ func _cycle_character(dir: int):
 	_update_character_preview()
 
 func _set_character_mode(enabled: bool):
+	if enabled:
+		_set_position_mode(false)
 	character_mode = enabled
 	character_marker.visible = enabled
-	selector.visible = not enabled and not delete_mode
+	selector.visible = not enabled and not delete_mode and not position_mode
 	if enabled:
 		_update_character_preview()
 		if map.character_position != Vector3.ZERO:
@@ -444,6 +693,8 @@ func _process(delta):
 		selector.position = lerp(selector.position, gridmap_position, min(delta * 40, 1.0))
 		action_build(gridmap_position)
 
+	if position_mode:
+		_check_position_hover(gridmap_position)
 	action_demolish(gridmap_position)
 
 func get_mesh(packed_scene):
@@ -515,7 +766,7 @@ func auto_save():
 	var map_data = {
 		"title": current_map_filename.get_basename().replace("_", " "),
 		"cash": map.cash,
-		"cells": MapLoader.read_cells(gridmap, json_id_map)
+		"cells": MapLoader.read_cells(gridmap, json_id_map, position_config_data)
 	}
 	if map.character_position != Vector3.ZERO:
 		map_data["character"] = {"x": map.character_position.x, "y": map.character_position.y, "z": map.character_position.z}
@@ -610,8 +861,14 @@ func _on_map_selected(filename: String):
 	if character_marker:
 		character_marker.visible = false
 	current_map_filename = filename
+	position_config_data = {}
 	map = DataMap.new()
 	MapLoader.place_cells(gridmap, map_data, json_id_map)
+	# Load position config data from cells
+	for cell in map_data.get("cells", []):
+		if cell.has("interactions"):
+			var ck = "%d,%d,%d" % [cell.get("x", 0), cell.get("y", 0), cell.get("z", 0)]
+			position_config_data[ck] = {"interactions": cell["interactions"]}
 	if map_data.has("character"):
 		var ch = map_data["character"]
 		map.character_position = Vector3(ch.get("x", 0), ch.get("y", 0), ch.get("z", 0))
@@ -633,7 +890,7 @@ func _on_save_modal_save(_text := ""):
 	var map_data = {
 		"title": title_text,
 		"cash": map.cash,
-		"cells": MapLoader.read_cells(gridmap, json_id_map)
+		"cells": MapLoader.read_cells(gridmap, json_id_map, position_config_data)
 	}
 	if map.character_position != Vector3.ZERO:
 		map_data["character"] = {"x": map.character_position.x, "y": map.character_position.y, "z": map.character_position.z}
@@ -651,6 +908,10 @@ func _input(event):
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_DELETE:
 			_set_delete_mode(not delete_mode)
+			get_viewport().set_input_as_handled()
+			return
+		if event.keycode == KEY_B:
+			_set_position_mode(not position_mode)
 			get_viewport().set_input_as_handled()
 			return
 		if event.keycode == KEY_BACKSPACE:
@@ -692,6 +953,8 @@ func _input(event):
 	if event.is_action_pressed("ui_cancel"):
 		if struct_modal and struct_modal.visible:
 			_close_struct_modal()
+		elif position_mode:
+			_set_position_mode(false)
 		elif delete_mode:
 			_set_delete_mode(false)
 		elif character_mode:

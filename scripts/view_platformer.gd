@@ -9,16 +9,29 @@ extends Node3D
 @export var zoom_speed = 10
 
 @export_group("Rotation")
-@export var rotation_speed = 0.3
+@export var rotation_speed = 120
 
 var camera_rotation_x := -20.0
 var camera_rotation_y := 0.0
 var zoom = 3
 
+var first_person := false
+var head_height := 1.2
+var input_paused := false
+
 @onready var camera = $Camera
 
 func _ready():
-	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+
+func toggle_view_mode():
+	first_person = not first_person
+	if first_person:
+		zoom = 0.5
+		camera_rotation_x = 0
+	else:
+		zoom = 3
+		camera_rotation_x = -20
 
 func _physics_process(delta):
 	if not target:
@@ -26,23 +39,23 @@ func _physics_process(delta):
 
 	self.position = self.position.lerp(target.position, delta * 4)
 	rotation_degrees = Vector3(camera_rotation_x, camera_rotation_y, 0)
-	camera.position = camera.position.lerp(Vector3(0, 0, zoom), 8 * delta)
+	var cam_pos = Vector3(0, head_height if first_person else 0, zoom)
+	camera.position = camera.position.lerp(cam_pos, 8 * delta)
 
-func _input(event):
-	if event is InputEventMouseMotion:
-		camera_rotation_y -= event.relative.x * rotation_speed * 0.1
-		camera_rotation_x -= event.relative.y * rotation_speed * 0.1
-		camera_rotation_x = clamp(camera_rotation_x, -80, -10)
-	
-	if event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			zoom -= zoom_speed * 0.1
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			zoom += zoom_speed * 0.1
-		zoom = clamp(zoom, zoom_maximum, zoom_minimum)
-	
-	if event.is_action_pressed("ui_cancel"):
-		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	if not input_paused:
+		var yaw = Input.get_axis("camera_left", "camera_right")
+		var pitch = Input.get_axis("camera_up", "camera_down")
+
+		var move_x = Input.get_axis("move_left", "move_right")
+		var move_z = Input.get_axis("move_forward", "move_back")
+		var moving = Vector2(move_x, move_z)
+		if moving.length() > 0.1 and abs(yaw) < 0.3:
+			var move_angle = atan2(move_x, -move_z)
+			camera_rotation_y += rad_to_deg(-move_angle) * 2.0 * delta
+
+		camera_rotation_y += yaw * rotation_speed * delta
+		camera_rotation_x -= pitch * rotation_speed * delta
+		if first_person:
+			camera_rotation_x = clamp(camera_rotation_x, -80, 80)
 		else:
-			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+			camera_rotation_x = clamp(camera_rotation_x, -80, -10)

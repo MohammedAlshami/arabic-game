@@ -39,37 +39,67 @@
     "id": "pavement-fountain",
     "model": "res://models/pavement-fountain.glb",
     "price": 50,
-    "scale": 2
+    "scale": 2,
+    "interactions": [
+      {"label": "Building", "reward": 30, "key": "building"},
+      {"label": "Car", "reward": 15, "key": "car"},
+      {"label": "Tree", "reward": 5, "key": "tree"}
+    ]
   },
   {
     "id": "building-small-a",
     "model": "res://models/building-small-a.glb",
     "price": 60,
-    "scale": 2
+    "scale": 2,
+    "interactions": [
+      {"label": "Building", "reward": 50, "key": "building"},
+      {"label": "Car", "reward": 25, "key": "car"},
+      {"label": "Tree", "reward": 10, "key": "tree"}
+    ]
   },
   {
     "id": "building-small-b",
     "model": "res://models/building-small-b.glb",
     "price": 65,
-    "scale": 2
+    "scale": 2,
+    "interactions": [
+      {"label": "Building", "reward": 55, "key": "building"},
+      {"label": "Car", "reward": 30, "key": "car"},
+      {"label": "Tree", "reward": 15, "key": "tree"}
+    ]
   },
   {
     "id": "building-small-c",
     "model": "res://models/building-small-c.glb",
     "price": 70,
-    "scale": 2
+    "scale": 2,
+    "interactions": [
+      {"label": "Building", "reward": 60, "key": "building"},
+      {"label": "Car", "reward": 35, "key": "car"},
+      {"label": "Tree", "reward": 20, "key": "tree"}
+    ]
   },
   {
     "id": "building-small-d",
     "model": "res://models/building-small-d.glb",
     "price": 75,
-    "scale": 2
+    "scale": 2,
+    "interactions": [
+      {"label": "Building", "reward": 65, "key": "building"},
+      {"label": "Car", "reward": 40, "key": "car"},
+      {"label": "Tree", "reward": 25, "key": "tree"}
+    ]
   },
   {
     "id": "building-garage",
     "model": "res://models/building-garage.glb",
     "price": 80,
-    "scale": 2
+    "scale": 2,
+    "interactions": [
+      {"label": "Building", "reward": 70, "key": "building"},
+      {"label": "Car", "reward": 45, "key": "car"},
+      {"label": "Tree", "reward": 30, "key": "tree"}
+    ]
   },
   {
     "id": "grass",
