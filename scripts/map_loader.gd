@@ -86,7 +86,7 @@ static func place_cells(gridmap: GridMap, map_data: Dictionary, id_map: Dictiona
 			gridmap.set_cell_item(pos, item, orient)
 
 # Get cells from a GridMap back into map format using reverse id_map
-static func read_cells(gridmap: GridMap, id_map: Dictionary, position_config: Dictionary = {}) -> Array:
+static func read_cells(gridmap: GridMap, id_map: Dictionary, position_config: Dictionary = {}, cell_uuids: Dictionary = {}) -> Array:
 	var rev_map = {}
 	for key in id_map:
 		rev_map[id_map[key]] = key
@@ -103,12 +103,26 @@ static func read_cells(gridmap: GridMap, id_map: Dictionary, position_config: Di
 				"orient": gridmap.get_cell_item_orientation(cell_pos)
 			}
 			var cell_key = "%d,%d,%d" % [cell_pos.x, cell_pos.y, cell_pos.z]
+			if cell_uuids.has(cell_key):
+				entry["uuid"] = cell_uuids[cell_key]
+			else:
+				entry["uuid"] = _generate_uuid()
 			if position_config.has(cell_key):
 				var pdata = position_config[cell_key]
 				if pdata.has("interactions") and not pdata["interactions"].is_empty():
 					entry["interactions"] = pdata["interactions"]
 			cells.append(entry)
 	return cells
+
+static func _generate_uuid() -> String:
+	var hex = "0123456789abcdef"
+	var uuid = ""
+	for i in range(36):
+		if i == 8 or i == 13 or i == 18 or i == 23:
+			uuid += "-"
+		else:
+			uuid += hex[randi() % 16]
+	return uuid
 
 static func _get_mesh(packed_scene):
 	if not packed_scene:

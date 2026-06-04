@@ -34,6 +34,8 @@ var play_plane: Plane
 var hover_marker: MeshInstance3D = null
 var hover_marker_mat: Material = null
 var hovered_cell_key: String = ""
+var ray_line: MeshInstance3D = null
+var ray_line_mat: Material = null
 
 func _ready():
 	play_plane = Plane(Vector3.UP, Vector3.ZERO)
@@ -41,6 +43,7 @@ func _ready():
 	_build_interaction_popup()
 	_build_crosshair()
 	_build_hover_marker()
+	_build_ray_line()
 
 func load_map():
 	filename = GameState.map_to_load
@@ -418,6 +421,14 @@ func _build_hover_marker():
 	hover_marker_mat.albedo_color = Color(1, 1, 0.2, 0.35)
 	hover_marker_mat.transparency = StandardMaterial3D.TRANSPARENCY_ALPHA
 
+func _build_ray_line():
+	ray_line = MeshInstance3D.new()
+	ray_line.visible = true
+	ray_line_mat = StandardMaterial3D.new()
+	ray_line_mat.albedo_color = Color(1, 1, 0, 0.3)
+	ray_line_mat.transparency = StandardMaterial3D.TRANSPARENCY_ALPHA
+	add_child(ray_line)
+
 func _process(delta):
 	_update_crosshair()
 	_raycast_hover()
@@ -434,70 +445,95 @@ func _update_crosshair():
 func _raycast_hover():
 	if not gridmap or not get_viewport():
 		hover_marker.visible = false
+		ray_line.visible = false
 		return
 	if interaction_popup and interaction_popup.visible:
 		hover_marker.visible = false
+		ray_line.visible = false
 		return
 
 	var cam = get_viewport().get_camera_3d()
 	if not cam:
 		hover_marker.visible = false
+		ray_line.visible = false
 		return
 
 	var mouse_pos = get_viewport().get_mouse_position()
-	var space = get_world_3d().direct_space_state
+	var origin = cam.project_ray_origin(mouse_pos)
+	var normal = cam.project_ray_normal(mouse_pos)
 
-	# Try physics raycast first
 	var hit_cell = Vector3()
 	var found = false
-	if space:
-		var origin = cam.project_ray_origin(mouse_pos)
-		var end = origin + cam.project_ray_normal(mouse_pos) * 200.0
-		var query = PhysicsRayQueryParameters3D.create(origin, end)
-		query.collide_with_areas = false
-		query.collide_with_bodies = true
-		var result = space.intersect_ray(query)
-		if not result.is_empty():
-			var hit_pos = result.get("position", Vector3())
-			var cell = gridmap.local_to_map(hit_pos)
-			hit_cell = Vector3(cell.x, cell.y, cell.z)
-			if gridmap.get_cell_item(hit_cell) != -1:
-				found = true
+	var hit_world_pos = origin + normal * 200.0
 
-	# Fallback: plane projection + broad search
-	if not found:
-		var origin = cam.project_ray_origin(mouse_pos)
-		var normal = cam.project_ray_normal(mouse_pos)
-		var plane = Plane(Vector3.UP, Vector3.ZERO)
-		var world_pos = plane.intersects_ray(origin, normal)
-		if world_pos != null:
-			hit_cell = Vector3(round(world_pos.x), 0, round(world_pos.z))
-			# Search all Y levels at this XZ
-			for y in range(10, -1, -1):
-				var check = Vector3(hit_cell.x, y, hit_cell.z)
-				if gridmap.get_cell_item(check) != -1:
-					hit_cell = check
-					found = true
-					break
+	# Use AABB intersection for precise cell detection
+	var best_dist = INF
+	var best_cell = Vector3()
+	var best_hit = Vector3()
 
-	# Broad search around hit cell if still not found
+	# First narrow down using plane projection
+	var plane = Plane(Vector3.UP, Vector3.ZERO)
+	var plane_hit = plane.intersects_ray(origin, normal)
+	var search_center = Vector3.ZERO
+	if plane_hit != null:
+		search_center = Vector3(round(plane_hit.x), 0, round(plane_hit.z))
+
+	for cell_pos in gridmap.get_used_cells():
+		# Quick XZ distance check to skip far cells
+		var dx = abs(cell_pos.x - search_center.x)
+		var dz = abs(cell_pos.z - search_center.z)
+		if dx > 5 or dz > 5:
+			continue
+
+		var item = gridmap.get_cell_item(cell_pos)
+		if item < 0:
+			continue
+		var mesh = gridmap.mesh_library.get_item_mesh(item)
+		if not mesh:
+			continue
+
+		var world_pos = gridmap.map_to_local(cell_pos)
+		var xform = gridmap.mesh_library.get_item_mesh_transform(item)
+		var aabb = mesh.get_aabb()
+		var taabb = xform * aabb
+		taabb.position += world_pos
+
+		var hit = taabb.intersects_ray(origin, normal)
+		if hit != null:
+			var d = origin.distance_squared_to(hit)
+			if d < best_dist:
+				best_dist = d
+				best_cell = cell_pos
+				best_hit = hit
+
+	if best_dist != INF:
+		hit_cell = best_cell
+		hit_world_pos = best_hit
+		found = true
+
+	# Also check physics raycast as fallback
 	if not found:
-		var base = Vector3(round(hit_cell.x), 0, round(hit_cell.z)) if hit_cell != Vector3() else Vector3()
-		for dx in range(-2, 3):
-			for dz in range(-2, 3):
-				for dy in range(10, -1, -1):
-					var check = Vector3(base.x + dx, dy, base.z + dz)
-					if gridmap.get_cell_item(check) != -1:
-						hit_cell = check
+		var space = get_world_3d().direct_space_state
+		if space:
+			var end = origin + normal * 200.0
+			var query = PhysicsRayQueryParameters3D.create(origin, end)
+			query.collide_with_areas = false
+			query.collide_with_bodies = true
+			var result = space.intersect_ray(query)
+			if not result.is_empty():
+				var rpos = result.get("position", Vector3())
+				hit_world_pos = rpos
+				var cell = gridmap.local_to_map(rpos)
+				hit_cell = Vector3(cell.x, cell.y, cell.z)
+				if gridmap.get_cell_item(hit_cell) != -1:
+					var ck = "%d,%d,%d" % [hit_cell.x, hit_cell.y, hit_cell.z]
+					if interaction_data.has(ck) and not interaction_data[ck].get("interactions", []).is_empty():
 						found = true
-						break
-				if found:
-					break
-			if found:
-				break
 
 	var ck = "%d,%d,%d" % [hit_cell.x, hit_cell.y, hit_cell.z]
-	if found and interaction_data.has(ck) and interaction_data[ck].get("interactions", []).size() > 0:
+	if found:
+		_draw_ray_line(origin, hit_world_pos)
+		ray_line.visible = true
 		var item = gridmap.get_cell_item(hit_cell)
 		if item >= 0:
 			var mesh = gridmap.mesh_library.get_item_mesh(item)
@@ -510,15 +546,27 @@ func _raycast_hover():
 					hover_marker.set_surface_override_material(s, hover_marker_mat)
 				hover_marker.visible = true
 				hovered_cell_key = ck
-			else:
-				hover_marker.visible = false
-				hovered_cell_key = ""
-		else:
-			hover_marker.visible = false
-			hovered_cell_key = ""
 	else:
 		hover_marker.visible = false
 		hovered_cell_key = ""
+		ray_line.visible = false
+
+func _draw_ray_line(from: Vector3, to: Vector3):
+	if not ray_line:
+		return
+	var dir = to - from
+	var dist = dir.length()
+	if dist < 0.01:
+		ray_line.visible = false
+		return
+	dir = dir.normalized()
+	var mid = (from + to) / 2.0
+	var box = BoxMesh.new()
+	box.size = Vector3(0.04, dist, 0.04)
+	box.material = ray_line_mat
+	ray_line.mesh = box
+	ray_line.position = mid
+	ray_line.look_at(from, Vector3.UP)
 
 func _set_interaction_paused(paused: bool):
 	if player:
@@ -546,9 +594,7 @@ func _show_interaction_popup(interactions: Array):
 		btn.position = Vector2(20, y_start + i * 50)
 		btn.size = Vector2(260, 40)
 		btn.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-		btn.pressed.connect(func():
-			_give_interaction_reward(data)
-		)
+		btn.pressed.connect(_give_interaction_reward.bind(data))
 		panel.add_child(btn)
 
 	var close_btn = Button.new()
@@ -556,27 +602,27 @@ func _show_interaction_popup(interactions: Array):
 	close_btn.position = Vector2(100, y_start + interactions.size() * 50 + 10)
 	close_btn.size = Vector2(100, 30)
 	close_btn.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	close_btn.pressed.connect(func():
-		interaction_popup.visible = false
-		_set_interaction_paused(false)
-	)
+	close_btn.pressed.connect(_close_interaction_popup)
 	panel.add_child(close_btn)
 
 	interaction_popup.visible = true
+
+func _close_interaction_popup():
+	if interaction_popup:
+		interaction_popup.visible = false
+	_set_interaction_paused(false)
 
 func _give_interaction_reward(data: Dictionary):
 	var reward = data.get("reward", 0)
 	if player and player.has_method("collect_coin"):
 		for _i in range(reward):
 			player.collect_coin()
-	interaction_popup.visible = false
-	_set_interaction_paused(false)
+	_close_interaction_popup()
 
 func _try_interact():
 	if not gridmap or not player:
 		return
 	if interaction_popup and interaction_popup.visible:
-		interaction_popup.visible = false
 		return
 	if not hovered_cell_key.is_empty() and interaction_data.has(hovered_cell_key):
 		var data = interaction_data[hovered_cell_key]

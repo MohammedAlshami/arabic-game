@@ -47,6 +47,7 @@ var position_marker_mat: Material = null
 var position_target_cell: Vector3
 var position_config_data: Dictionary = {}
 var position_modal_open := false
+var cell_uuids: Dictionary = {}
 
 var character_dim_mat: Material = null
 
@@ -683,6 +684,9 @@ func _process(delta):
 		else:
 			delete_marker.visible = false
 		if has_item and Input.is_action_just_pressed("build"):
+			var dck = "%d,%d,%d" % [target_pos.x, target_pos.y, target_pos.z]
+			cell_uuids.erase(dck)
+			position_config_data.erase(dck)
 			gridmap.set_cell_item(target_pos, -1)
 			Audio.play("sounds/removal-a.ogg, sounds/removal-b.ogg, sounds/removal-c.ogg, sounds/removal-d.ogg", -20)
 			auto_save()
@@ -725,11 +729,24 @@ func get_mesh(packed_scene):
 				combined.surface_set_material(index, mat)
 	return combined
 
+func _generate_uuid() -> String:
+	var hex = "0123456789abcdef"
+	var uuid = ""
+	for i in range(36):
+		if i == 8 or i == 13 or i == 18 or i == 23:
+			uuid += "-"
+		else:
+			uuid += hex[randi() % 16]
+	return uuid
+
 func action_build(gridmap_position):
 	if Input.is_action_just_pressed("build"):
 		var previous_tile = gridmap.get_cell_item(gridmap_position)
 		gridmap.set_cell_item(gridmap_position, index, gridmap.get_orthogonal_index_from_basis(selector.basis))
 		if previous_tile != index:
+			var ck = "%d,%d,%d" % [gridmap_position.x, gridmap_position.y, gridmap_position.z]
+			if not cell_uuids.has(ck):
+				cell_uuids[ck] = _generate_uuid()
 			map.cash -= structures[index].price
 			update_cash()
 			Audio.play("sounds/placement-a.ogg, sounds/placement-b.ogg, sounds/placement-c.ogg, sounds/placement-d.ogg", -20)
@@ -756,6 +773,9 @@ func action_demolish(gridmap_position):
 			Audio.play("sounds/removal-a.ogg", -20)
 			return
 		if gridmap.get_cell_item(gridmap_position) != -1:
+			var dck = "%d,%d,%d" % [gridmap_position.x, gridmap_position.y, gridmap_position.z]
+			cell_uuids.erase(dck)
+			position_config_data.erase(dck)
 			gridmap.set_cell_item(gridmap_position, -1)
 			Audio.play("sounds/removal-a.ogg, sounds/removal-b.ogg, sounds/removal-c.ogg, sounds/removal-d.ogg", -20)
 			auto_save()
@@ -766,7 +786,7 @@ func auto_save():
 	var map_data = {
 		"title": current_map_filename.get_basename().replace("_", " "),
 		"cash": map.cash,
-		"cells": MapLoader.read_cells(gridmap, json_id_map, position_config_data)
+		"cells": MapLoader.read_cells(gridmap, json_id_map, position_config_data, cell_uuids)
 	}
 	if map.character_position != Vector3.ZERO:
 		map_data["character"] = {"x": map.character_position.x, "y": map.character_position.y, "z": map.character_position.z}
@@ -862,13 +882,16 @@ func _on_map_selected(filename: String):
 		character_marker.visible = false
 	current_map_filename = filename
 	position_config_data = {}
+	cell_uuids = {}
 	map = DataMap.new()
 	MapLoader.place_cells(gridmap, map_data, json_id_map)
-	# Load position config data from cells
+	# Load position config data and UUIDs from cells
 	for cell in map_data.get("cells", []):
+		var ck = "%d,%d,%d" % [cell.get("x", 0), cell.get("y", 0), cell.get("z", 0)]
 		if cell.has("interactions"):
-			var ck = "%d,%d,%d" % [cell.get("x", 0), cell.get("y", 0), cell.get("z", 0)]
 			position_config_data[ck] = {"interactions": cell["interactions"]}
+		if cell.has("uuid"):
+			cell_uuids[ck] = cell["uuid"]
 	if map_data.has("character"):
 		var ch = map_data["character"]
 		map.character_position = Vector3(ch.get("x", 0), ch.get("y", 0), ch.get("z", 0))
@@ -890,7 +913,7 @@ func _on_save_modal_save(_text := ""):
 	var map_data = {
 		"title": title_text,
 		"cash": map.cash,
-		"cells": MapLoader.read_cells(gridmap, json_id_map, position_config_data)
+		"cells": MapLoader.read_cells(gridmap, json_id_map, position_config_data, cell_uuids)
 	}
 	if map.character_position != Vector3.ZERO:
 		map_data["character"] = {"x": map.character_position.x, "y": map.character_position.y, "z": map.character_position.z}
