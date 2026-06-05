@@ -20,7 +20,7 @@ static func load_definitions() -> Dictionary:
 
 # Load a map JSON file from res://maps/
 static func load_map(filename: String) -> Dictionary:
-	var path = "res://maps/" + filename
+	var path = filename if filename.begins_with("res://") else "res://maps/" + filename
 	var file = FileAccess.open(path, FileAccess.READ)
 	if not file:
 		push_error("Cannot open map: ", path)

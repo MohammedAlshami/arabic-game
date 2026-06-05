@@ -25,6 +25,15 @@
 			"font_color": "#000000",
 			"font_size": 32,
 			"action": "edit"
+		},
+		{
+			"id": "structure",
+			"text": "CREATE STRUCTURE",
+			"color": "#f0c040",
+			"hover_color": "#f5d060",
+			"font_color": "#000000",
+			"font_size": 32,
+			"action": "structure"
 		}
 	],
 	"no_maps_text": "No maps yet. Ask the AI to create one for you!",

@@ -343,12 +343,6 @@ func _physics_process(delta):
 			player.collision_layer = 1
 			player.collision_mask = 1
 
-	if player and gridmap:
-		var cell = gridmap.local_to_map(player.global_position)
-		if cell != last_player_cell:
-			last_player_cell = cell
-			_generate_if_needed(cell)
-
 	if unsaved_changes:
 		save_timer -= delta
 		if save_timer <= 0:

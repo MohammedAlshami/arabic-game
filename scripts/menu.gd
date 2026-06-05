@@ -74,6 +74,8 @@ func _connect_buttons():
 				btn.pressed.connect(_on_play)
 			elif action == "edit":
 				btn.pressed.connect(_on_edit)
+			elif action == "structure":
+				btn.pressed.connect(_on_structure)
 
 func _on_play():
 	modal_title.text = home_data.get("modal", {}).get("play_title", "Select Map")
@@ -128,6 +130,50 @@ func _on_map_selected(filename: String, is_edit: bool):
 	else:
 		GameState.current_mode = GameState.Mode.PLAY
 		get_tree().change_scene_to_file("res://scenes/play.tscn")
+
+func _on_structure():
+	modal_title.text = home_data.get("modal", {}).get("structure_title", "Select Structure")
+	refresh_structure_list()
+	map_modal.show()
+
+func refresh_structure_list():
+	for child in map_container.get_children():
+		child.queue_free()
+	var dir = DirAccess.open("res://structures/")
+	if dir:
+		dir.list_dir_begin()
+		var file_name = dir.get_next()
+		var found := false
+		while file_name != "":
+			if file_name.ends_with(".json"):
+				found = true
+				var sname = file_name.get_basename().replace("_", " ")
+				var btn = Button.new()
+				btn.text = sname
+				btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				btn.pressed.connect(_on_structure_selected.bind(file_name))
+				map_container.add_child(btn)
+			file_name = dir.get_next()
+		dir.list_dir_end()
+		if not found:
+			var lbl = Label.new()
+			lbl.text = "No structures yet. Ask the AI to create one!"
+			lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			lbl.custom_minimum_size = Vector2(300, 0)
+			map_container.add_child(lbl)
+	else:
+		var lbl = Label.new()
+		lbl.text = "No structures yet. Ask the AI to create one!"
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		lbl.custom_minimum_size = Vector2(300, 0)
+		map_container.add_child(lbl)
+
+func _on_structure_selected(filename: String):
+	GameState.structure_to_edit = filename
+	GameState.current_mode = GameState.Mode.STRUCTURE
+	get_tree().change_scene_to_file("res://scenes/main.tscn")
 
 func _on_map_back():
 	map_modal.hide()

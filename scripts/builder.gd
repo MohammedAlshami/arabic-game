@@ -61,6 +61,7 @@ var xray_cubes: Node3D = null
 var barrier_mode := false
 var barrier_item_id := -1
 var barrier_marker: MeshInstance3D = null
+var structure_edit_mode := false
 
 func _ready():
 	map = DataMap.new()
@@ -173,10 +174,20 @@ func _ready():
 	if view_camera and view_camera.environment:
 		view_camera.environment.fog_enabled = false
 
-	if GameState.map_to_load:
+	if GameState.current_mode == GameState.Mode.STRUCTURE and GameState.structure_to_edit:
+		structure_edit_mode = true
+		call_deferred("_on_structure_load")
+	elif GameState.map_to_load:
 		call_deferred("_on_startup_load")
 
 	modal_save_btn.pressed.connect(_on_save_modal_save)
+
+func _on_structure_load():
+	_on_map_selected("res://structures/" + GameState.structure_to_edit)
+	GameState.structure_to_edit = ""
+	modal_cancel_btn.pressed.connect(_on_save_modal_cancel)
+	modal_name_input.text_submitted.connect(_on_save_modal_save)
+	load_cancel_btn.pressed.connect(_on_load_modal_cancel)
 
 func _on_startup_load():
 	_on_map_selected(GameState.map_to_load)
@@ -893,6 +904,9 @@ func auto_save():
 	}
 	if map.character_position != Vector3.ZERO:
 		map_data["character"] = {"x": map.character_position.x, "y": map.character_position.y, "z": map.character_position.z}
+	if not current_map_filename.begins_with("res://"):
+		var prefix = "res://structures/" if structure_edit_mode else "res://maps/"
+		current_map_filename = prefix + current_map_filename
 	MapLoader.save_map(map_data, current_map_filename)
 
 func action_y_axis():
@@ -1081,9 +1095,10 @@ func _on_save_modal_save(_text := ""):
 	}
 	if map.character_position != Vector3.ZERO:
 		map_data["character"] = {"x": map.character_position.x, "y": map.character_position.y, "z": map.character_position.z}
-	MapLoader.save_map(map_data, filename)
-	current_map_filename = filename
-	print("Map saved as: " + filename)
+	var save_path = ("res://structures/" if structure_edit_mode else "res://maps/") + filename
+	MapLoader.save_map(map_data, save_path)
+	current_map_filename = save_path
+	print("Map saved as: " + save_path)
 	Audio.play("sounds/placement-a.ogg, sounds/placement-b.ogg", -20)
 	modal.hide()
 
@@ -1116,7 +1131,7 @@ func _input(event):
 			else:
 				_cycle_structure(1)
 			return
-		if event.keycode == KEY_Z:
+		if event.keycode == KEY_Z and not structure_edit_mode:
 			if struct_modal and struct_modal.visible:
 				return
 			if character_mode:
@@ -1142,7 +1157,7 @@ func _input(event):
 		if event.keycode == KEY_Y and event.ctrl_pressed:
 			_set_xray_mode(not xray_mode)
 			return
-		if event.keycode == KEY_M:
+		if event.keycode == KEY_M and not structure_edit_mode:
 			barrier_mode = not barrier_mode
 			barrier_marker.visible = barrier_mode
 			if barrier_mode:
