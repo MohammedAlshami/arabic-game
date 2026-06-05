@@ -1,37 +1,28 @@
 {
-	"bg": {
-		"gradient": ["#bfe3fc", "#d7efff", "#ffffff"],
-		"ground_color": "#f9b685",
-		"ground_overlay": "#e28a55"
-	},
+	"bg": {},
 	"title": {
 		"text": "CITY BUILDER",
 		"font_size": 72,
-		"color": "#ffffff",
-		"outline_color": "#1e1b29",
-		"outline_size": 6
-	},
-	"subtitle": {
-		"text": "Construct  •  Populate  •  Explore!",
-		"font_size": 22,
-		"color": "#e28a55",
-		"bg_color": "#fff3e5",
-		"border_color": "#1e1b29"
+		"color": "#000000",
+		"outline_color": "#ffffff",
+		"outline_size": 4
 	},
 	"buttons": [
 		{
 			"id": "play",
 			"text": "PLAY GAME",
-			"color": "#10cf79",
-			"border_color": "#157c4c",
+			"color": "#d4d4d4",
+			"hover_color": "#e0e0e0",
+			"font_color": "#000000",
 			"font_size": 32,
 			"action": "play"
 		},
 		{
 			"id": "edit",
 			"text": "EDIT WORLD",
-			"color": "#b69dec",
-			"border_color": "#7c62b3",
+			"color": "#d4d4d4",
+			"hover_color": "#e0e0e0",
+			"font_color": "#000000",
 			"font_size": 32,
 			"action": "edit"
 		}

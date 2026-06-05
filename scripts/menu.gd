@@ -19,19 +19,7 @@ func _ready():
 	_connect_buttons()
 
 func apply_style():
-	var _bg = $Bg
-	var ground = $Ground
-	var ground_overlay = $Ground/GroundOverlay
 	var title_label = $Title
-	var subtitle_bg = $SubtitleBg
-	var subtitle_label = $SubtitleBg/Subtitle
-
-	if home_data.has("bg"):
-		var bg_data = home_data["bg"]
-		if bg_data.has("ground_color"):
-			ground.color = _hex(bg_data["ground_color"])
-		if bg_data.has("ground_overlay"):
-			ground_overlay.color = _hex(bg_data["ground_overlay"])
 
 	if home_data.has("title"):
 		var t = home_data["title"]
@@ -42,27 +30,7 @@ func apply_style():
 		ls.outline_color = _hex(t.get("outline_color", "#000000"))
 		ls.outline_size = t.get("outline_size", 6)
 		title_label.label_settings = ls
-
-	if home_data.has("subtitle"):
-		var s = home_data["subtitle"]
-		subtitle_label.text = s.get("text", "")
-		var sls = LabelSettings.new()
-		sls.font = load("res://fonts/lilita_one_regular.ttf")
-		sls.font_size = s.get("font_size", 22)
-		subtitle_label.label_settings = sls
-		subtitle_label.add_theme_color_override("font_color", _hex(s.get("color", "#e28a55")))
-		var ss = StyleBoxFlat.new()
-		ss.bg_color = _hex(s.get("bg_color", "#fff3e5"))
-		ss.border_color = Color(0.118, 0.106, 0.161)
-		ss.border_width_left = 4
-		ss.border_width_top = 4
-		ss.border_width_right = 4
-		ss.border_width_bottom = 4
-		ss.corner_radius_top_left = 40
-		ss.corner_radius_top_right = 40
-		ss.corner_radius_bottom_left = 40
-		ss.corner_radius_bottom_right = 40
-		subtitle_bg.add_theme_stylebox_override("panel", ss)
+		title_label.add_theme_color_override("font_color", _hex(t.get("color", "#000000")))
 
 	var buttons_data = home_data.get("buttons", [])
 	for btn_data in buttons_data:
@@ -73,17 +41,23 @@ func apply_style():
 			btn.text = btn_data.get("text", btn.text)
 			var bs = StyleBoxFlat.new()
 			bs.bg_color = _hex(btn_data.get("color", "#aaaaaa"))
-			bs.border_color = Color(0.118, 0.106, 0.161)
-			bs.border_width_left = 4
-			bs.border_width_top = 4
-			bs.border_width_right = 4
-			bs.border_width_bottom = 8
-			bs.corner_radius_top_left = 16
-			bs.corner_radius_top_right = 16
-			bs.corner_radius_bottom_left = 16
-			bs.corner_radius_bottom_right = 16
+			bs.corner_radius_top_left = 8
+			bs.corner_radius_top_right = 8
+			bs.corner_radius_bottom_left = 8
+			bs.corner_radius_bottom_right = 8
+			bs.shadow_size = 2
+			bs.shadow_color = Color(0, 0, 0, 0.1)
 			btn.add_theme_stylebox_override("normal", bs)
-			btn.add_theme_color_override("font_color", Color(1, 1, 1))
+			var hs = StyleBoxFlat.new()
+			hs.bg_color = _hex(btn_data.get("hover_color", btn_data.get("color", "#aaaaaa")))
+			hs.corner_radius_top_left = 8
+			hs.corner_radius_top_right = 8
+			hs.corner_radius_bottom_left = 8
+			hs.corner_radius_bottom_right = 8
+			hs.shadow_size = 3
+			hs.shadow_color = Color(0, 0, 0, 0.15)
+			btn.add_theme_stylebox_override("hover", hs)
+			btn.add_theme_color_override("font_color", _hex(btn_data.get("font_color", "#000000")))
 			btn.add_theme_font_size_override("font_size", btn_data.get("font_size", 28))
 
 func _hex(h: String) -> Color:

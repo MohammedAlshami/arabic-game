@@ -15,9 +15,6 @@ var gravity = 0
 
 var previously_floored = false
 
-var jump_single = true
-var jump_double = true
-
 var coins = 0
 
 @onready var particles_trail = $ParticlesTrail
@@ -123,9 +120,7 @@ func handle_controls(delta):
 	# Jumping
 
 	if Input.is_action_just_pressed("jump"):
-
-		if jump_single or jump_double:
-			jump()
+		jump()
 
 # Handle gravity
 
@@ -134,8 +129,6 @@ func handle_gravity(delta):
 	gravity += 25 * delta
 
 	if gravity > 0 and is_on_floor():
-
-		jump_single = true
 		gravity = 0
 
 # Jumping
@@ -147,12 +140,6 @@ func jump():
 	gravity = -jump_strength
 
 	model.scale = Vector3(0.5, 1.5, 0.5)
-
-	if jump_single:
-		jump_single = false;
-		jump_double = true;
-	else:
-		jump_double = false;
 
 # Collecting coins
 

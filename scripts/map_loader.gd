@@ -86,7 +86,7 @@ static func place_cells(gridmap: GridMap, map_data: Dictionary, id_map: Dictiona
 			gridmap.set_cell_item(pos, item, orient)
 
 # Get cells from a GridMap back into map format using reverse id_map
-static func read_cells(gridmap: GridMap, id_map: Dictionary, position_config: Dictionary = {}, cell_uuids: Dictionary = {}) -> Array:
+static func read_cells(gridmap: GridMap, id_map: Dictionary, position_config: Dictionary = {}, cell_uuids: Dictionary = {}, barrier_item: int = -1) -> Array:
 	var rev_map = {}
 	for key in id_map:
 		rev_map[id_map[key]] = key
@@ -94,6 +94,8 @@ static func read_cells(gridmap: GridMap, id_map: Dictionary, position_config: Di
 	for cell_pos in gridmap.get_used_cells():
 		var item = gridmap.get_cell_item(cell_pos)
 		var sid = rev_map.get(item, "")
+		if sid == "" and item == barrier_item:
+			sid = "_barrier"
 		if sid != "":
 			var entry = {
 				"id": sid,

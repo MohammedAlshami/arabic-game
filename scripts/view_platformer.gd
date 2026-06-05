@@ -43,7 +43,7 @@ func _physics_process(delta):
 	camera.position = camera.position.lerp(cam_pos, 8 * delta)
 
 	if not input_paused:
-		var yaw = Input.get_axis("camera_left", "camera_right")
+		var yaw = Input.get_axis("camera_right", "camera_left")
 		var pitch = Input.get_axis("camera_up", "camera_down")
 
 		var move_x = Input.get_axis("move_left", "move_right")

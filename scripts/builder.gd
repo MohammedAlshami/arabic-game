@@ -55,6 +55,12 @@ var json_defs: Dictionary = {}
 var json_id_map: Dictionary = {}
 var current_map_filename := ""
 var fog_visible := false
+var xray_mode := false
+var xray_original_meshes: Dictionary = {}
+var xray_cubes: Node3D = null
+var barrier_mode := false
+var barrier_item_id := -1
+var barrier_marker: MeshInstance3D = null
 
 func _ready():
 	map = DataMap.new()
@@ -104,6 +110,16 @@ func _ready():
 
 	gridmap.mesh_library = mesh_library
 
+	# Add invisible barrier item
+	var barrier_id = mesh_library.get_last_unused_item_id()
+	mesh_library.create_item(barrier_id)
+	mesh_library.set_item_mesh(barrier_id, box)
+	var barrier_col = BoxShape3D.new()
+	barrier_col.size = Vector3(1, 100, 1)
+	mesh_library.set_item_shapes(barrier_id, [barrier_col])
+	barrier_item_id = barrier_id
+	json_id_map["_barrier"] = barrier_id
+
 	character_marker = MeshInstance3D.new()
 	character_marker.mesh = BoxMesh.new()
 	character_marker.mesh.size = Vector3(0.5, 1, 0.5)
@@ -132,12 +148,27 @@ func _ready():
 	position_marker_mat.albedo_color = Color(1, 1, 0.2, 0.35)
 	position_marker_mat.transparency = StandardMaterial3D.TRANSPARENCY_ALPHA
 
+	barrier_marker = MeshInstance3D.new()
+	barrier_marker.visible = false
+	add_child(barrier_marker)
+	var barrier_marker_mat = StandardMaterial3D.new()
+	barrier_marker_mat.albedo_color = Color(0.8, 0.2, 0.8, 0.4)
+	barrier_marker_mat.transparency = StandardMaterial3D.TRANSPARENCY_ALPHA
+	var barrier_mesh = BoxMesh.new()
+	barrier_mesh.size = Vector3(1, 100, 1)
+	barrier_marker.mesh = barrier_mesh
+	barrier_marker.set_surface_override_material(0, barrier_marker_mat)
+
 	canvas_layer = get_node("../CanvasLayer") as CanvasLayer
 	structures_btn.visible = false
 	_build_delete_cursor()
 
 	update_structure()
 	update_cash()
+
+	xray_cubes = Node3D.new()
+	xray_cubes.visible = false
+	add_child(xray_cubes)
 
 	if view_camera and view_camera.environment:
 		view_camera.environment.fog_enabled = false
@@ -665,15 +696,46 @@ func _process(delta):
 				target_pos = check_pos
 				break
 		var has_item = target_pos.y >= 0
+		if not has_item:
+			var search_radius = 2
+			for dx in range(-search_radius, search_radius + 1):
+				for dz in range(-search_radius, search_radius + 1):
+					var nearby = Vector3(target_pos.x + dx, target_pos.y, target_pos.z + dz)
+					if gridmap.get_cell_item(nearby) >= 0:
+						for y in range(10, -1, -1):
+							var check = Vector3(nearby.x, y, nearby.z)
+							if gridmap.get_cell_item(check) >= 0:
+								target_pos = check
+								has_item = true
+								break
+					if has_item:
+						break
+				if has_item:
+					break
 		if has_item and not (character_mode and map.character_position.distance_to(target_pos) < 1):
 			var item = gridmap.get_cell_item(target_pos)
 			if item >= 0:
 				var mesh = gridmap.mesh_library.get_item_mesh(item)
 				if mesh:
+					var group_center = target_pos
+					var dck = "%d,%d,%d" % [target_pos.x, target_pos.y, target_pos.z]
+					var uuid = cell_uuids.get(dck, "")
+					if uuid != "":
+						var group_cells: Array[Vector3] = []
+						for ck in cell_uuids:
+							if cell_uuids[ck] == uuid:
+								var parts = ck.split(",")
+								if parts.size() == 3:
+									group_cells.append(Vector3(int(parts[0]), int(parts[1]), int(parts[2])))
+						if group_cells.size() > 1:
+							var avg = Vector3.ZERO
+							for c in group_cells:
+								avg += c
+							group_center = avg / group_cells.size()
 					delete_marker.mesh = mesh
 					var xform = gridmap.mesh_library.get_item_mesh_transform(item)
-					delete_marker.scale = xform.basis.get_scale()
-					delete_marker.position = gridmap.map_to_local(target_pos)
+					delete_marker.scale = xform.basis.get_scale() * 1.1
+					delete_marker.position = gridmap.map_to_local(group_center)
 					for s in range(mesh.get_surface_count()):
 						delete_marker.set_surface_override_material(s, delete_marker_mat)
 					delete_marker.visible = true
@@ -685,11 +747,26 @@ func _process(delta):
 			delete_marker.visible = false
 		if has_item and Input.is_action_just_pressed("build"):
 			var dck = "%d,%d,%d" % [target_pos.x, target_pos.y, target_pos.z]
-			cell_uuids.erase(dck)
-			position_config_data.erase(dck)
-			gridmap.set_cell_item(target_pos, -1)
+			var uuid = cell_uuids.get(dck, "")
+			var to_delete: Array[String] = [dck]
+			if uuid != "":
+				for ck in cell_uuids:
+					if cell_uuids[ck] == uuid and ck != dck:
+						to_delete.append(ck)
+			for ck in to_delete:
+				cell_uuids.erase(ck)
+				position_config_data.erase(ck)
+				var parts = ck.split(",")
+				if parts.size() == 3:
+					gridmap.set_cell_item(Vector3(int(parts[0]), int(parts[1]), int(parts[2])), -1)
 			Audio.play("sounds/removal-a.ogg, sounds/removal-b.ogg, sounds/removal-c.ogg, sounds/removal-d.ogg", -20)
 			auto_save()
+	elif barrier_mode:
+		barrier_marker.position = lerp(barrier_marker.position, gridmap_position, min(delta * 40, 1.0))
+		if Input.is_action_just_pressed("build"):
+			if gridmap.get_cell_item(gridmap_position) < 0:
+				gridmap.set_cell_item(gridmap_position, barrier_item_id)
+				Audio.play("sounds/placement-a.ogg, sounds/placement-b.ogg, sounds/placement-c.ogg, sounds/placement-d.ogg", -20)
 	elif character_mode:
 		character_marker.position = lerp(character_marker.position, gridmap_position + Vector3(0, 0.5, 0), min(delta * 40, 1.0))
 		action_place_character(gridmap_position)
@@ -739,8 +816,31 @@ func _generate_uuid() -> String:
 			uuid += hex[randi() % 16]
 	return uuid
 
+func _get_item_occupied_cells(item_id: int, cell_pos: Vector3) -> Array:
+	var mesh = xray_original_meshes.get(item_id) if xray_original_meshes.has(item_id) else gridmap.mesh_library.get_item_mesh(item_id)
+	if not mesh:
+		return [cell_pos]
+	var xform = gridmap.mesh_library.get_item_mesh_transform(item_id)
+	var aabb = xform * mesh.get_aabb()
+	var min_x = int(ceil(aabb.position.x))
+	var max_x = int(floor(aabb.position.x + aabb.size.x))
+	var min_y = int(ceil(aabb.position.y))
+	var max_y = int(floor(aabb.position.y + aabb.size.y))
+	var min_z = int(ceil(aabb.position.z))
+	var max_z = int(floor(aabb.position.z + aabb.size.z))
+	var cells: Array = []
+	for ox in range(min_x, max_x + 1):
+		for oy in range(min_y, max_y + 1):
+			for oz in range(min_z, max_z + 1):
+				cells.append(Vector3(cell_pos.x + ox, cell_pos.y + oy, cell_pos.z + oz))
+	return cells
+
 func action_build(gridmap_position):
 	if Input.is_action_just_pressed("build"):
+		var occupy = _get_item_occupied_cells(index, gridmap_position)
+		for c in occupy:
+			if gridmap.get_cell_item(Vector3i(c.x, c.y, c.z)) >= 0:
+				return
 		var previous_tile = gridmap.get_cell_item(gridmap_position)
 		gridmap.set_cell_item(gridmap_position, index, gridmap.get_orthogonal_index_from_basis(selector.basis))
 		if previous_tile != index:
@@ -751,6 +851,9 @@ func action_build(gridmap_position):
 			update_cash()
 			Audio.play("sounds/placement-a.ogg, sounds/placement-b.ogg, sounds/placement-c.ogg, sounds/placement-d.ogg", -20)
 			auto_save()
+			if xray_mode:
+				_set_xray_mode(false)
+				_set_xray_mode(true)
 
 func action_place_character(gridmap_position):
 	if Input.is_action_just_pressed("build"):
@@ -786,7 +889,7 @@ func auto_save():
 	var map_data = {
 		"title": current_map_filename.get_basename().replace("_", " "),
 		"cash": map.cash,
-		"cells": MapLoader.read_cells(gridmap, json_id_map, position_config_data, cell_uuids)
+		"cells": MapLoader.read_cells(gridmap, json_id_map, position_config_data, cell_uuids, barrier_item_id)
 	}
 	if map.character_position != Vector3.ZERO:
 		map_data["character"] = {"x": map.character_position.x, "y": map.character_position.y, "z": map.character_position.z}
@@ -802,6 +905,8 @@ func action_y_axis():
 func _cycle_structure(dir: int):
 	for _attempt in range(structures.size()):
 		index = (index + dir + structures.size()) % structures.size()
+		if character_indices.has(index):
+			continue
 		if structures[index] and structures[index].model:
 			update_structure()
 			return
@@ -827,6 +932,65 @@ func update_structure():
 
 func update_cash():
 	cash_display.text = "$" + str(map.cash)
+
+func _set_xray_mode(enabled: bool):
+	xray_mode = enabled
+	if enabled:
+		_build_xray_cubes()
+		var lib = gridmap.mesh_library
+		for item_id in lib.get_item_list():
+			var mesh = lib.get_item_mesh(item_id)
+			if not mesh:
+				continue
+			xray_original_meshes[item_id] = mesh
+			var empty = BoxMesh.new()
+			empty.size = Vector3(0.01, 0.01, 0.01)
+			lib.set_item_mesh(item_id, empty)
+	else:
+		var lib = gridmap.mesh_library
+		for item_id in xray_original_meshes:
+			lib.set_item_mesh(item_id, xray_original_meshes[item_id])
+		xray_original_meshes.clear()
+		_clear_xray_cubes()
+
+func _build_xray_cubes():
+	_clear_xray_cubes()
+	var box_mat = StandardMaterial3D.new()
+	box_mat.albedo_color = Color(0.3, 0.6, 1.0, 1.0)
+	box_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var seen: Dictionary = {}
+	for cell_pos in gridmap.get_used_cells():
+		var item = gridmap.get_cell_item(cell_pos)
+		if item < 0:
+			continue
+		var cpos = Vector3(cell_pos.x, cell_pos.y, cell_pos.z)
+		for occ in _get_item_occupied_cells(item, cpos):
+			var key = "%d,%d,%d" % [occ.x, occ.y, occ.z]
+			if seen.has(key):
+				continue
+			seen[key] = true
+			var cube = MeshInstance3D.new()
+			cube.mesh = BoxMesh.new()
+			cube.mesh.size = Vector3(0.95, 0.95, 0.95)
+			cube.set_surface_override_material(0, box_mat)
+			cube.position = occ
+			xray_cubes.add_child(cube)
+	xray_cubes.visible = true
+
+func _clear_xray_cubes():
+	for c in xray_cubes.get_children():
+		c.queue_free()
+	xray_cubes.visible = false
+
+func _clear_all_cells():
+	for cell_pos in gridmap.get_used_cells():
+		var ck = "%d,%d,%d" % [cell_pos.x, cell_pos.y, cell_pos.z]
+		cell_uuids.erase(ck)
+		position_config_data.erase(ck)
+		gridmap.set_cell_item(cell_pos, -1)
+	map.cash = 10000
+	update_cash()
+	auto_save()
 
 func action_save_modal():
 	if Input.is_action_just_pressed("save_map"):
@@ -913,7 +1077,7 @@ func _on_save_modal_save(_text := ""):
 	var map_data = {
 		"title": title_text,
 		"cash": map.cash,
-		"cells": MapLoader.read_cells(gridmap, json_id_map, position_config_data, cell_uuids)
+		"cells": MapLoader.read_cells(gridmap, json_id_map, position_config_data, cell_uuids, barrier_item_id)
 	}
 	if map.character_position != Vector3.ZERO:
 		map_data["character"] = {"x": map.character_position.x, "y": map.character_position.y, "z": map.character_position.z}
@@ -971,6 +1135,23 @@ func _input(event):
 			fog_visible = not fog_visible
 			if view_camera and view_camera.environment:
 				view_camera.environment.fog_enabled = fog_visible
+			return
+		if event.keycode == KEY_X and event.ctrl_pressed:
+			_clear_all_cells()
+			return
+		if event.keycode == KEY_Y and event.ctrl_pressed:
+			_set_xray_mode(not xray_mode)
+			return
+		if event.keycode == KEY_M:
+			barrier_mode = not barrier_mode
+			barrier_marker.visible = barrier_mode
+			if barrier_mode:
+				delete_mode = false
+				delete_cursor.visible = false
+				delete_marker.visible = false
+				character_mode = false
+				_set_character_mode(false)
+			return
 			return
 
 	if event.is_action_pressed("ui_cancel"):

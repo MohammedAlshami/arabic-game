@@ -32,6 +32,8 @@ var crosshair: Control = null
 
 var play_plane: Plane
 var hover_marker: MeshInstance3D = null
+var char_models: Array = []
+var char_index: int = 0
 var hover_marker_mat: Material = null
 var hovered_cell_key: String = ""
 var ray_line: MeshInstance3D = null
@@ -66,6 +68,22 @@ func load_map():
 	grass_block_id = id_map.get("block-grass", -1)
 	MapLoader.place_cells(gridmap, map_data, id_map)
 
+	# Add barrier item
+	var barrier_id = mesh_lib.get_last_unused_item_id()
+	mesh_lib.create_item(barrier_id)
+	var barrier_box = BoxMesh.new()
+	barrier_box.size = Vector3(0.01, 0.01, 0.01)
+	mesh_lib.set_item_mesh(barrier_id, barrier_box)
+	var barrier_col = BoxShape3D.new()
+	barrier_col.size = Vector3(1, 100, 1)
+	mesh_lib.set_item_shapes(barrier_id, [barrier_col])
+	id_map["_barrier"] = barrier_id
+
+	# Clear item collision shapes (keep barriers)
+	for item_id in mesh_lib.get_item_list():
+		if item_id != barrier_id:
+			mesh_lib.set_item_shapes(item_id, [])
+
 	# Load interaction data from map cells
 	interaction_data = {}
 	for cell in map_data.get("cells", []):
@@ -81,11 +99,19 @@ func load_map():
 
 	var span = max(bounds_max.x - bounds_min.x, bounds_max.z - bounds_min.z)
 	_create_ground_plane()
-	if span < INITIAL_RADIUS * 2:
-		var spawn_center = Vector3i(0, 0, 0)
-		if map_data.has("character"):
-			spawn_center = Vector3i(map_data["character"].get("x", 0), 0, map_data["character"].get("z", 0))
-		_generate_initial_area(spawn_center)
+
+	_build_cell_collision()
+
+	char_models = [
+		"res://models/plat_models/character.glb",
+		"res://models/characters/Barbarian.glb",
+		"res://models/characters/Knight.glb",
+		"res://models/characters/Mage.glb",
+		"res://models/characters/Ranger.glb",
+		"res://models/characters/Rogue.glb",
+		"res://models/characters/Rogue_Hooded.glb",
+	]
+	char_index = 0
 
 	day_night = load("res://scripts/day_night.gd").new()
 	add_child(day_night)
@@ -155,6 +181,97 @@ func _spawn_player(pos: Vector3):
 	view.position = player.position
 	add_child(player)
 
+func _build_cell_collision():
+	var collision_container = Node3D.new()
+	collision_container.name = "CellCollision"
+	add_child(collision_container)
+	var box_mat = BoxShape3D.new()
+	box_mat.size = Vector3(1, 1, 1)
+	var seen: Dictionary = {}
+	for cell_pos in gridmap.get_used_cells():
+		var item = gridmap.get_cell_item(cell_pos)
+		if item < 0:
+			continue
+		var mesh = gridmap.mesh_library.get_item_mesh(item)
+		if not mesh:
+			continue
+		var xform = gridmap.mesh_library.get_item_mesh_transform(item)
+		var aabb = xform * mesh.get_aabb()
+		var min_x = int(ceil(aabb.position.x))
+		var max_x = int(floor(aabb.position.x + aabb.size.x))
+		var min_y = int(ceil(aabb.position.y))
+		var max_y = int(floor(aabb.position.y + aabb.size.y))
+		var min_z = int(ceil(aabb.position.z))
+		var max_z = int(floor(aabb.position.z + aabb.size.z))
+		for ox in range(min_x, max_x + 1):
+			for oy in range(min_y, max_y + 1):
+				for oz in range(min_z, max_z + 1):
+					var key = "%d,%d,%d" % [cell_pos.x + ox, cell_pos.y + oy, cell_pos.z + oz]
+					if seen.has(key):
+						continue
+					seen[key] = true
+					var body = StaticBody3D.new()
+					var col = CollisionShape3D.new()
+					col.shape = box_mat
+					body.add_child(col)
+					body.position = Vector3(cell_pos.x + ox, cell_pos.y + oy, cell_pos.z + oz)
+					collision_container.add_child(body)
+
+func _find_anim_player(node: Node) -> AnimationPlayer:
+	if node is AnimationPlayer:
+		return node
+	for child in node.get_children():
+		var result = _find_anim_player(child)
+		if result:
+			return result
+	return null
+
+func _cycle_character(dir: int):
+	if char_models.is_empty() or not player:
+		return
+	char_index = (char_index + dir + char_models.size()) % char_models.size()
+	var path = char_models[char_index]
+	var glb = load(path)
+	if glb and glb is PackedScene:
+		var old = player.get_node_or_null("Character")
+		if old:
+			player.remove_child(old)
+			old.queue_free()
+		var inst = glb.instantiate()
+		inst.name = "Character"
+		if inst is Node3D:
+			player.add_child(inst)
+			player.move_child(inst, 0)
+			player.model = inst
+			var embedded_ap = _find_anim_player(inst)
+			var ap = embedded_ap
+			if not ap:
+				ap = AnimationPlayer.new()
+				ap.name = "AnimationPlayer"
+				inst.add_child(ap)
+			if not ap.has_animation_library(""):
+				ap.add_animation_library("", AnimationLibrary.new())
+			var lib = ap.get_animation_library("")
+			if not embedded_ap or embedded_ap.get_animation_list().size() == 0:
+				var anim_map = {"Idle_A": "idle", "Walking_A": "walk", "Jump_Full_Long": "jump"}
+				for anim_path in ["res://models/characters/Rig_Medium_MovementBasic.glb", "res://models/characters/Rig_Medium_General.glb"]:
+					var anim_src = load(anim_path)
+					if anim_src and anim_src is PackedScene:
+						var src_inst = anim_src.instantiate()
+						add_child(src_inst)
+						var src_ap = _find_anim_player(src_inst)
+						if src_ap:
+							for src_name in src_ap.get_animation_list():
+								var anim = src_ap.get_animation(src_name)
+								if anim:
+									var target_name = anim_map.get(src_name, src_name)
+									if not lib.has_animation(target_name):
+										lib.add_animation(target_name, anim)
+						remove_child(src_inst)
+						src_inst.queue_free()
+			player.animation = ap
+			player.animation.play("idle", 0.1)
+
 func _unhandled_input(event):
 	if event.is_action_pressed("build"):
 		_try_interact()
@@ -177,6 +294,12 @@ func _unhandled_input(event):
 		if event.keycode == KEY_F5:
 			if view and view.has_method("toggle_view_mode"):
 				view.toggle_view_mode()
+			return
+		if event.keycode == KEY_Q:
+			_cycle_character(-1)
+			return
+		if event.keycode == KEY_E:
+			_cycle_character(1)
 			return
 
 func _try_sleep():
@@ -532,24 +655,69 @@ func _raycast_hover():
 
 	var ck = "%d,%d,%d" % [hit_cell.x, hit_cell.y, hit_cell.z]
 	if found:
-		_draw_ray_line(origin, hit_world_pos)
-		ray_line.visible = true
-		var item = gridmap.get_cell_item(hit_cell)
-		if item >= 0:
-			var mesh = gridmap.mesh_library.get_item_mesh(item)
+		var target_cell = hit_cell
+		var target_item = gridmap.get_cell_item(target_cell)
+		if target_item < 0:
+			var search_radius = 3
+			var found_owner = false
+			for dx in range(-search_radius, search_radius + 1):
+				if found_owner:
+					break
+				for dz in range(-search_radius, search_radius + 1):
+					if found_owner:
+						break
+					var nearby = Vector3(hit_cell.x + dx, hit_cell.y, hit_cell.z + dz)
+					var ni = gridmap.get_cell_item(nearby)
+					if ni < 0:
+						continue
+					for y in range(10, -1, -1):
+						var check = Vector3(nearby.x, y, nearby.z)
+						if gridmap.get_cell_item(check) == ni:
+							var occ = _get_item_occupied_cells(ni, check)
+							for o in occ:
+								if Vector3(o.x, o.y, o.z) == hit_cell:
+									target_cell = check
+									target_item = ni
+									found_owner = true
+									break
+						if found_owner:
+							break
+		if target_item >= 0:
+			_draw_ray_line(origin, hit_world_pos)
+			ray_line.visible = true
+			var mesh = gridmap.mesh_library.get_item_mesh(target_item)
 			if mesh:
 				hover_marker.mesh = mesh
-				var xform = gridmap.mesh_library.get_item_mesh_transform(item)
-				hover_marker.scale = xform.basis.get_scale()
-				hover_marker.position = gridmap.map_to_local(hit_cell)
+				var xform = gridmap.mesh_library.get_item_mesh_transform(target_item)
+				hover_marker.scale = xform.basis.get_scale() * 1.1
+				hover_marker.position = gridmap.map_to_local(target_cell)
 				for s in range(mesh.get_surface_count()):
 					hover_marker.set_surface_override_material(s, hover_marker_mat)
 				hover_marker.visible = true
-				hovered_cell_key = ck
+				hovered_cell_key = "%d,%d,%d" % [target_cell.x, target_cell.y, target_cell.z]
 	else:
 		hover_marker.visible = false
 		hovered_cell_key = ""
 		ray_line.visible = false
+
+func _get_item_occupied_cells(item_id: int, cell_pos: Vector3) -> Array:
+	var mesh = gridmap.mesh_library.get_item_mesh(item_id)
+	if not mesh:
+		return [cell_pos]
+	var xform = gridmap.mesh_library.get_item_mesh_transform(item_id)
+	var aabb = xform * mesh.get_aabb()
+	var min_x = int(ceil(aabb.position.x))
+	var max_x = int(floor(aabb.position.x + aabb.size.x))
+	var min_y = int(ceil(aabb.position.y))
+	var max_y = int(floor(aabb.position.y + aabb.size.y))
+	var min_z = int(ceil(aabb.position.z))
+	var max_z = int(floor(aabb.position.z + aabb.size.z))
+	var cells: Array = []
+	for ox in range(min_x, max_x + 1):
+		for oy in range(min_y, max_y + 1):
+			for oz in range(min_z, max_z + 1):
+				cells.append(Vector3(cell_pos.x + ox, cell_pos.y + oy, cell_pos.z + oz))
+	return cells
 
 func _draw_ray_line(from: Vector3, to: Vector3):
 	if not ray_line:

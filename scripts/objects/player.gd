@@ -14,9 +14,12 @@ var rotation_direction: float
 var gravity = 0
 
 var previously_floored = false
-
-var jump_single = true
-var jump_double = true
+var peak_y: float = 0.0
+var falling_hard: bool = false
+var falling_sound_played: bool = false
+var crash_sound_played: bool = false
+var fall_audio: AudioStreamPlayer
+var crash_audio: AudioStreamPlayer
 
 var coins = 0
 
@@ -24,8 +27,16 @@ var coins = 0
 @onready var sound_footsteps = $SoundFootsteps
 @onready var model = $Character
 @onready var animation = $Character/AnimationPlayer
+var falling_snd: AudioStreamPlayer
+var crash_snd: AudioStreamPlayer
 
 # Functions
+
+func _ready():
+	falling_snd = AudioStreamPlayer.new()
+	crash_snd = AudioStreamPlayer.new()
+	add_child(falling_snd)
+	add_child(crash_snd)
 
 func _physics_process(delta):
 
@@ -58,15 +69,72 @@ func _physics_process(delta):
 	if position.y < -10:
 		get_tree().reload_current_scene()
 
+	# Track falling state BEFORE landing logic
+	var was_falling_hard = falling_hard
+	var just_landed = is_on_floor() and not previously_floored
+	var fall_dist = peak_y - position.y
+
+	# Track peak height for falling pose
+
+	if velocity.y > 0:
+		peak_y = max(peak_y, position.y)
+		falling_hard = false
+	elif velocity.y < 0 and not is_on_floor():
+		if fall_dist > 6:
+			falling_hard = true
+
 	# Animation for scale (jumping and landing)
 
 	model.scale = model.scale.lerp(Vector3(1, 1, 1), delta * 10)
 
+	# Falling pose (head down)
+
+	if falling_hard:
+		model.rotation.x = lerp_angle(model.rotation.x, deg_to_rad(90), delta * 5)
+	elif not is_on_floor():
+		model.rotation.x = lerp_angle(model.rotation.x, deg_to_rad(0), delta * 5)
+
+	# Falling sound
+	if velocity.y < -1 and fall_dist > 8 and not falling_sound_played and not is_on_floor():
+		falling_sound_played = true
+		var s = load("res://sounds/falling.mp3")
+		if s:
+			falling_snd.stream = s
+			falling_snd.volume_db = -8
+			falling_snd.play()
+
+	# Crash sound — play just before impact
+	if falling_hard and not crash_sound_played:
+		var space = get_world_3d().direct_space_state
+		if space:
+			var from = position
+			var to = position + Vector3(0, -4, 0)
+			var query = PhysicsRayQueryParameters3D.create(from, to)
+			query.collide_with_areas = false
+			query.collide_with_bodies = true
+			var result = space.intersect_ray(query)
+			if not result.is_empty():
+				var dist = position.y - result["position"].y
+				if dist < 2.5:
+					crash_sound_played = true
+					var s = load("res://sounds/crash.mp3")
+					if s:
+						crash_snd.stream = s
+						crash_snd.volume_db = -5
+						crash_snd.play()
+
 	# Animation when landing
 
-	if is_on_floor() and gravity > 2 and !previously_floored:
-		model.scale = Vector3(1.25, 0.75, 1.25)
-		Audio.play("res://sounds/land.ogg")
+	if is_on_floor():
+		model.rotation.x = lerp_angle(model.rotation.x, deg_to_rad(0), delta * 10)
+		peak_y = position.y
+		falling_hard = false
+		falling_sound_played = false
+		crash_sound_played = false
+		if just_landed and gravity > 2:
+			model.scale = Vector3(1.25, 0.75, 1.25)
+			if not was_falling_hard:
+				Audio.play("res://sounds/land.ogg")
 
 	previously_floored = is_on_floor()
 
@@ -124,9 +192,7 @@ func handle_controls(delta):
 	# Jumping
 
 	if Input.is_action_just_pressed("jump"):
-
-		if jump_single or jump_double:
-			jump()
+		jump()
 
 # Handle gravity
 
@@ -135,8 +201,6 @@ func handle_gravity(delta):
 	gravity += 25 * delta
 
 	if gravity > 0 and is_on_floor():
-
-		jump_single = true
 		gravity = 0
 
 # Jumping
@@ -148,12 +212,6 @@ func jump():
 	gravity = -jump_strength
 
 	model.scale = Vector3(0.5, 1.5, 0.5)
-
-	if jump_single:
-		jump_single = false;
-		jump_double = true;
-	else:
-		jump_double = false;
 
 # Collecting coins
 

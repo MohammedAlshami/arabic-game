@@ -41,7 +41,7 @@ func handle_input(delta):
 	
 	var input := Vector3.ZERO
 	
-	input.y = Input.get_axis("camera_left", "camera_right")
+	input.y = Input.get_axis("camera_right", "camera_left")
 	input.x = Input.get_axis("camera_up", "camera_down")
 	
 	camera_rotation += input.limit_length(1.0) * rotation_speed * delta
