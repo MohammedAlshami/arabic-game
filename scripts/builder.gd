@@ -2,12 +2,28 @@ extends Node3D
 
 const MapLoader = preload("res://scripts/map_loader.gd")
 
+const CELL_SIZE := 0.25
+const CELL_INV := 4.0
+
+static func snap(v: float) -> float:
+	return round(v * CELL_INV) / CELL_INV
+
+static func to_cell(pos: Vector3) -> Vector3i:
+	return Vector3i(int(round(pos.x * CELL_INV)), int(round(pos.y * CELL_INV)), int(round(pos.z * CELL_INV)))
+
+static func to_world(cell: Vector3i) -> Vector3:
+	return Vector3(cell.x * CELL_SIZE, cell.y * CELL_SIZE, cell.z * CELL_SIZE)
+
+func cell_key(pos: Vector3) -> String:
+	var c = to_cell(pos)
+	return "%d,%d,%d" % [c.x, c.y, c.z]
+
 @export var structures: Array[Structure] = []
 
 var map:DataMap
 
 var index:int = 0
-var y_offset := 0
+var y_offset := 0.0
 var character_mode := false
 var character_marker: Node3D = null
 var character_index := 0
@@ -44,7 +60,7 @@ var delete_marker_mat: Material = null
 var position_mode := false
 var position_marker: MeshInstance3D = null
 var position_marker_mat: Material = null
-var position_target_cell: Vector3
+var position_target_cell: Vector3i
 var position_config_data: Dictionary = {}
 var position_modal_open := false
 var cell_uuids: Dictionary = {}
@@ -62,6 +78,7 @@ var barrier_mode := false
 var barrier_item_id := -1
 var barrier_marker: MeshInstance3D = null
 var structure_edit_mode := false
+var placed_occupied: Dictionary = {}  # cell_key -> Dictionary of occupied cell keys
 
 func _ready():
 	map = DataMap.new()
@@ -406,26 +423,26 @@ func _check_position_hover(gridmap_position: Vector3):
 	if position_modal_open:
 		return
 	var has_building = false
-	var target_cell = Vector3(gridmap_position.x, -1, gridmap_position.z)
+	var found_cell := Vector3i.ZERO
 	for y in range(10, -1, -1):
-		var check_pos = Vector3(gridmap_position.x, y, gridmap_position.z)
-		if gridmap.get_cell_item(check_pos) != -1:
-			target_cell = check_pos
+		var check_cell = to_cell(Vector3(gridmap_position.x, y, gridmap_position.z))
+		if gridmap.get_cell_item(check_cell) != -1:
+			found_cell = check_cell
 			has_building = true
 			break
 	if has_building:
-		var item = gridmap.get_cell_item(target_cell)
+		var item = gridmap.get_cell_item(found_cell)
 		if item >= 0:
 			var mesh = gridmap.mesh_library.get_item_mesh(item)
 			if mesh:
 				position_marker.mesh = mesh
 				var xform = gridmap.mesh_library.get_item_mesh_transform(item)
 				position_marker.scale = xform.basis.get_scale()
-				position_marker.position = gridmap.map_to_local(target_cell)
+				position_marker.position = gridmap.map_to_local(found_cell)
 				for s in range(mesh.get_surface_count()):
 					position_marker.set_surface_override_material(s, position_marker_mat)
 				position_marker.visible = true
-				position_target_cell = target_cell
+				position_target_cell = found_cell
 			else:
 				position_marker.visible = false
 		else:
@@ -433,14 +450,14 @@ func _check_position_hover(gridmap_position: Vector3):
 	else:
 		position_marker.visible = false
 	if has_building and Input.is_action_just_pressed("build"):
-		_open_position_modal(target_cell)
+		_open_position_modal(found_cell)
 
-func _open_position_modal(cell: Vector3):
+func _open_position_modal(cell: Vector3i):
 	if position_modal_open:
 		return
 	position_modal_open = true
-	var cell_key = "%d,%d,%d" % [cell.x, cell.y, cell.z]
-	var existing = position_config_data.get(cell_key, {})
+	var ck = "%d,%d,%d" % [cell.x, cell.y, cell.z]
+	var existing = position_config_data.get(ck, {})
 	var sid = _get_sid_at_cell(cell)
 
 	# Build the modal UI
@@ -590,7 +607,7 @@ func _open_position_modal(cell: Vector3):
 		var mcell = {
 			"interactions": saved_interactions
 		}
-		position_config_data[cell_key] = mcell
+		position_config_data[ck] = mcell
 		_save_position_data_to_cell(cell, saved_interactions)
 		position_modal_open = false
 		modal_control.queue_free()
@@ -601,7 +618,7 @@ func _open_position_modal(cell: Vector3):
 		modal_control.queue_free()
 	)
 
-func _get_sid_at_cell(cell: Vector3) -> String:
+func _get_sid_at_cell(cell: Vector3i) -> String:
 	var item = gridmap.get_cell_item(cell)
 	if item < 0:
 		return ""
@@ -610,17 +627,12 @@ func _get_sid_at_cell(cell: Vector3) -> String:
 		rev_map[json_id_map[key]] = key
 	return rev_map.get(item, "")
 
-func _save_position_data_to_cell(cell: Vector3, interactions: Array):
-	var rev_map = {}
-	for key in json_id_map:
-		rev_map[json_id_map[key]] = key
+func _save_position_data_to_cell(cell: Vector3i, interactions: Array):
 	var sid = _get_sid_at_cell(cell)
 	if sid.is_empty():
 		return
-	# Find the cell in the cells loaded from map and update it
-	# We track cells via a dictionary keyed by position
-	var cell_key = "%d,%d,%d" % [cell.x, cell.y, cell.z]
-	position_config_data[cell_key] = {"interactions": interactions}
+	var ck = "%d,%d,%d" % [cell.x, cell.y, cell.z]
+	position_config_data[ck] = {"interactions": interactions}
 	auto_save()
 
 func _update_character_preview():
@@ -694,29 +706,29 @@ func _process(delta):
 		view_camera.project_ray_origin(mouse_pos),
 		view_camera.project_ray_normal(mouse_pos))
 
-	var gridmap_position = Vector3(round(world_position.x), y_offset, round(world_position.z))
+	var gridmap_position = Vector3(snap(world_position.x), y_offset, snap(world_position.z))
 
 	if delete_mode:
 		delete_cursor.position = mouse_pos
 		delete_cursor.queue_redraw()
-		# Find the highest occupied cell at this X/Z position across all Y levels
 		var target_pos = Vector3(gridmap_position.x, -1, gridmap_position.z)
 		for y in range(10, -1, -1):
-			var check_pos = Vector3(gridmap_position.x, y, gridmap_position.z)
-			if gridmap.get_cell_item(check_pos) != -1:
-				target_pos = check_pos
+			var check_cell = to_cell(Vector3(gridmap_position.x, y, gridmap_position.z))
+			if gridmap.get_cell_item(check_cell) != -1:
+				target_pos = Vector3(gridmap_position.x, y, gridmap_position.z)
 				break
 		var has_item = target_pos.y >= 0
 		if not has_item:
-			var search_radius = 2
-			for dx in range(-search_radius, search_radius + 1):
-				for dz in range(-search_radius, search_radius + 1):
-					var nearby = Vector3(target_pos.x + dx, target_pos.y, target_pos.z + dz)
-					if gridmap.get_cell_item(nearby) >= 0:
+			var search_radius = 2.0
+			for dx in range(-2, 3):
+				for dz in range(-2, 3):
+					var nearby = Vector3(target_pos.x + dx * CELL_SIZE, target_pos.y, target_pos.z + dz * CELL_SIZE)
+					var nearby_cell = to_cell(nearby)
+					if gridmap.get_cell_item(nearby_cell) >= 0:
 						for y in range(10, -1, -1):
-							var check = Vector3(nearby.x, y, nearby.z)
-							if gridmap.get_cell_item(check) >= 0:
-								target_pos = check
+							var check_cell = to_cell(Vector3(nearby.x, y, nearby.z))
+							if gridmap.get_cell_item(check_cell) >= 0:
+								target_pos = Vector3(nearby.x, y, nearby.z)
 								has_item = true
 								break
 					if has_item:
@@ -724,29 +736,30 @@ func _process(delta):
 				if has_item:
 					break
 		if has_item and not (character_mode and map.character_position.distance_to(target_pos) < 1):
-			var item = gridmap.get_cell_item(target_pos)
+			var target_cell = to_cell(target_pos)
+			var item = gridmap.get_cell_item(target_cell)
 			if item >= 0:
 				var mesh = gridmap.mesh_library.get_item_mesh(item)
 				if mesh:
 					var group_center = target_pos
-					var dck = "%d,%d,%d" % [target_pos.x, target_pos.y, target_pos.z]
+					var dck = cell_key(target_pos)
 					var uuid = cell_uuids.get(dck, "")
 					if uuid != "":
-						var group_cells: Array[Vector3] = []
+						var group_cells_world: Array[Vector3] = []
 						for ck in cell_uuids:
 							if cell_uuids[ck] == uuid:
 								var parts = ck.split(",")
 								if parts.size() == 3:
-									group_cells.append(Vector3(int(parts[0]), int(parts[1]), int(parts[2])))
-						if group_cells.size() > 1:
+									group_cells_world.append(to_world(Vector3i(int(parts[0]), int(parts[1]), int(parts[2]))))
+						if group_cells_world.size() > 1:
 							var avg = Vector3.ZERO
-							for c in group_cells:
+							for c in group_cells_world:
 								avg += c
-							group_center = avg / group_cells.size()
+							group_center = avg / group_cells_world.size()
 					delete_marker.mesh = mesh
 					var xform = gridmap.mesh_library.get_item_mesh_transform(item)
 					delete_marker.scale = xform.basis.get_scale() * 1.1
-					delete_marker.position = gridmap.map_to_local(group_center)
+					delete_marker.position = gridmap.map_to_local(target_cell)
 					for s in range(mesh.get_surface_count()):
 						delete_marker.set_surface_override_material(s, delete_marker_mat)
 					delete_marker.visible = true
@@ -757,7 +770,7 @@ func _process(delta):
 		else:
 			delete_marker.visible = false
 		if has_item and Input.is_action_just_pressed("build"):
-			var dck = "%d,%d,%d" % [target_pos.x, target_pos.y, target_pos.z]
+			var dck = cell_key(target_pos)
 			var uuid = cell_uuids.get(dck, "")
 			var to_delete: Array[String] = [dck]
 			if uuid != "":
@@ -769,14 +782,15 @@ func _process(delta):
 				position_config_data.erase(ck)
 				var parts = ck.split(",")
 				if parts.size() == 3:
-					gridmap.set_cell_item(Vector3(int(parts[0]), int(parts[1]), int(parts[2])), -1)
+					gridmap.set_cell_item(Vector3i(int(parts[0]), int(parts[1]), int(parts[2])), -1)
 			Audio.play("sounds/removal-a.ogg, sounds/removal-b.ogg, sounds/removal-c.ogg, sounds/removal-d.ogg", -20)
 			auto_save()
 	elif barrier_mode:
 		barrier_marker.position = lerp(barrier_marker.position, gridmap_position, min(delta * 40, 1.0))
 		if Input.is_action_just_pressed("build"):
-			if gridmap.get_cell_item(gridmap_position) < 0:
-				gridmap.set_cell_item(gridmap_position, barrier_item_id)
+			var bp = to_cell(gridmap_position)
+			if gridmap.get_cell_item(bp) < 0:
+				gridmap.set_cell_item(bp, barrier_item_id)
 				Audio.play("sounds/placement-a.ogg, sounds/placement-b.ogg, sounds/placement-c.ogg, sounds/placement-d.ogg", -20)
 	elif character_mode:
 		character_marker.position = lerp(character_marker.position, gridmap_position + Vector3(0, 0.5, 0), min(delta * 40, 1.0))
@@ -833,29 +847,41 @@ func _get_item_occupied_cells(item_id: int, cell_pos: Vector3) -> Array:
 		return [cell_pos]
 	var xform = gridmap.mesh_library.get_item_mesh_transform(item_id)
 	var aabb = xform * mesh.get_aabb()
-	var min_x = int(ceil(aabb.position.x))
-	var max_x = int(floor(aabb.position.x + aabb.size.x))
-	var min_y = int(ceil(aabb.position.y))
-	var max_y = int(floor(aabb.position.y + aabb.size.y))
-	var min_z = int(ceil(aabb.position.z))
-	var max_z = int(floor(aabb.position.z + aabb.size.z))
+
 	var cells: Array = []
+	var eps = 0.001
+	var min_x = int(floor((aabb.position.x + cell_pos.x) / CELL_SIZE))
+	var max_x = int(floor((aabb.position.x + aabb.size.x + cell_pos.x - eps) / CELL_SIZE))
+	var min_y = int(floor((aabb.position.y + cell_pos.y) / CELL_SIZE))
+	var max_y = int(floor((aabb.position.y + aabb.size.y + cell_pos.y - eps) / CELL_SIZE))
+	var min_z = int(floor((aabb.position.z + cell_pos.z) / CELL_SIZE))
+	var max_z = int(floor((aabb.position.z + aabb.size.z + cell_pos.z - eps) / CELL_SIZE))
+
 	for ox in range(min_x, max_x + 1):
 		for oy in range(min_y, max_y + 1):
 			for oz in range(min_z, max_z + 1):
-				cells.append(Vector3(cell_pos.x + ox, cell_pos.y + oy, cell_pos.z + oz))
+				cells.append(Vector3(ox * CELL_SIZE, oy * CELL_SIZE, oz * CELL_SIZE))
 	return cells
 
 func action_build(gridmap_position):
 	if Input.is_action_just_pressed("build"):
 		var occupy = _get_item_occupied_cells(index, gridmap_position)
+		var occupy_set = {}
 		for c in occupy:
-			if gridmap.get_cell_item(Vector3i(c.x, c.y, c.z)) >= 0:
+			var ck = cell_key(c)
+			if gridmap.get_cell_item(to_cell(c)) >= 0:
 				return
-		var previous_tile = gridmap.get_cell_item(gridmap_position)
-		gridmap.set_cell_item(gridmap_position, index, gridmap.get_orthogonal_index_from_basis(selector.basis))
+			occupy_set[ck] = true
+		for existing_ck in placed_occupied:
+			for ck in occupy_set:
+				if placed_occupied[existing_ck].has(ck):
+					return
+		var cp = to_cell(gridmap_position)
+		var previous_tile = gridmap.get_cell_item(cp)
+		gridmap.set_cell_item(cp, index, gridmap.get_orthogonal_index_from_basis(selector.basis))
 		if previous_tile != index:
-			var ck = "%d,%d,%d" % [gridmap_position.x, gridmap_position.y, gridmap_position.z]
+			var ck = cell_key(gridmap_position)
+			placed_occupied[ck] = occupy_set
 			if not cell_uuids.has(ck):
 				cell_uuids[ck] = _generate_uuid()
 			map.cash -= structures[index].price
@@ -886,11 +912,13 @@ func action_demolish(gridmap_position):
 			character_marker.visible = false
 			Audio.play("sounds/removal-a.ogg", -20)
 			return
-		if gridmap.get_cell_item(gridmap_position) != -1:
-			var dck = "%d,%d,%d" % [gridmap_position.x, gridmap_position.y, gridmap_position.z]
+		var dp = to_cell(gridmap_position)
+		if gridmap.get_cell_item(dp) != -1:
+			var dck = cell_key(gridmap_position)
 			cell_uuids.erase(dck)
 			position_config_data.erase(dck)
-			gridmap.set_cell_item(gridmap_position, -1)
+			placed_occupied.erase(dck)
+			gridmap.set_cell_item(dp, -1)
 			Audio.play("sounds/removal-a.ogg, sounds/removal-b.ogg, sounds/removal-c.ogg, sounds/removal-d.ogg", -20)
 			auto_save()
 
@@ -900,7 +928,7 @@ func auto_save():
 	var map_data = {
 		"title": current_map_filename.get_basename().replace("_", " "),
 		"cash": map.cash,
-		"cells": MapLoader.read_cells(gridmap, json_id_map, position_config_data, cell_uuids, barrier_item_id)
+		"cells": MapLoader.read_cells(gridmap, json_id_map, position_config_data, cell_uuids, barrier_item_id, CELL_SIZE)
 	}
 	if map.character_position != Vector3.ZERO:
 		map_data["character"] = {"x": map.character_position.x, "y": map.character_position.y, "z": map.character_position.z}
@@ -911,10 +939,10 @@ func auto_save():
 
 func action_y_axis():
 	if Input.is_action_just_pressed("y_up"):
-		y_offset += 1
+		y_offset += CELL_SIZE
 	if Input.is_action_just_pressed("y_down"):
-		y_offset -= 1
-		y_offset = max(0, y_offset)
+		y_offset -= CELL_SIZE
+		y_offset = max(0.0, y_offset)
 
 func _cycle_structure(dir: int):
 	for _attempt in range(structures.size()):
@@ -949,47 +977,26 @@ func update_cash():
 
 func _set_xray_mode(enabled: bool):
 	xray_mode = enabled
+	var lib = gridmap.mesh_library
 	if enabled:
-		_build_xray_cubes()
-		var lib = gridmap.mesh_library
 		for item_id in lib.get_item_list():
 			var mesh = lib.get_item_mesh(item_id)
 			if not mesh:
 				continue
 			xray_original_meshes[item_id] = mesh
-			var empty = BoxMesh.new()
-			empty.size = Vector3(0.01, 0.01, 0.01)
-			lib.set_item_mesh(item_id, empty)
+			var xray_mesh = mesh.duplicate()
+			var mat = StandardMaterial3D.new()
+			mat.albedo_color = Color(0.3, 0.6, 1.0, 0.3)
+			mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+			mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			for s in range(xray_mesh.get_surface_count()):
+				xray_mesh.surface_set_material(s, mat)
+			lib.set_item_mesh(item_id, xray_mesh)
 	else:
-		var lib = gridmap.mesh_library
 		for item_id in xray_original_meshes:
 			lib.set_item_mesh(item_id, xray_original_meshes[item_id])
 		xray_original_meshes.clear()
 		_clear_xray_cubes()
-
-func _build_xray_cubes():
-	_clear_xray_cubes()
-	var box_mat = StandardMaterial3D.new()
-	box_mat.albedo_color = Color(0.3, 0.6, 1.0, 1.0)
-	box_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	var seen: Dictionary = {}
-	for cell_pos in gridmap.get_used_cells():
-		var item = gridmap.get_cell_item(cell_pos)
-		if item < 0:
-			continue
-		var cpos = Vector3(cell_pos.x, cell_pos.y, cell_pos.z)
-		for occ in _get_item_occupied_cells(item, cpos):
-			var key = "%d,%d,%d" % [occ.x, occ.y, occ.z]
-			if seen.has(key):
-				continue
-			seen[key] = true
-			var cube = MeshInstance3D.new()
-			cube.mesh = BoxMesh.new()
-			cube.mesh.size = Vector3(0.95, 0.95, 0.95)
-			cube.set_surface_override_material(0, box_mat)
-			cube.position = occ
-			xray_cubes.add_child(cube)
-	xray_cubes.visible = true
 
 func _clear_xray_cubes():
 	for c in xray_cubes.get_children():
@@ -1002,6 +1009,7 @@ func _clear_all_cells():
 		cell_uuids.erase(ck)
 		position_config_data.erase(ck)
 		gridmap.set_cell_item(cell_pos, -1)
+	placed_occupied.clear()
 	map.cash = 10000
 	update_cash()
 	auto_save()
@@ -1061,15 +1069,24 @@ func _on_map_selected(filename: String):
 	current_map_filename = filename
 	position_config_data = {}
 	cell_uuids = {}
+	placed_occupied = {}
 	map = DataMap.new()
-	MapLoader.place_cells(gridmap, map_data, json_id_map)
-	# Load position config data and UUIDs from cells
+	MapLoader.place_cells(gridmap, map_data, json_id_map, CELL_SIZE)
 	for cell in map_data.get("cells", []):
-		var ck = "%d,%d,%d" % [cell.get("x", 0), cell.get("y", 0), cell.get("z", 0)]
+		var ck = cell_key(Vector3(cell.get("x", 0), cell.get("y", 0), cell.get("z", 0)))
 		if cell.has("interactions"):
 			position_config_data[ck] = {"interactions": cell["interactions"]}
 		if cell.has("uuid"):
 			cell_uuids[ck] = cell["uuid"]
+	for cell_coord in gridmap.get_used_cells():
+		var item = gridmap.get_cell_item(cell_coord)
+		if item >= 0:
+			var wpos = to_world(cell_coord)
+			var occ = _get_item_occupied_cells(item, wpos)
+			var occ_set = {}
+			for o in occ:
+				occ_set[cell_key(o)] = true
+			placed_occupied[cell_key(wpos)] = occ_set
 	if map_data.has("character"):
 		var ch = map_data["character"]
 		map.character_position = Vector3(ch.get("x", 0), ch.get("y", 0), ch.get("z", 0))
@@ -1078,6 +1095,19 @@ func _on_map_selected(filename: String):
 		update_cash()
 		Audio.play("sounds/placement-a.ogg, sounds/placement-b.ogg", -20)
 		load_modal.hide()
+
+	var cells = map_data.get("cells", [])
+	if cells.size() > 0:
+		var min_pos = Vector3(cells[0]["x"], cells[0]["y"], cells[0]["z"])
+		var max_pos = min_pos
+		for c in cells:
+			var p = Vector3(c["x"], c["y"], c["z"])
+			min_pos = Vector3(min(min_pos.x, p.x), min(min_pos.y, p.y), min(min_pos.z, p.z))
+			max_pos = Vector3(max(max_pos.x, p.x), max(max_pos.y, p.y), max(max_pos.z, p.z))
+		var center = (min_pos + max_pos) / 2.0
+		var view = get_node("../View")
+		if view:
+			view.camera_position = center
 
 func _on_load_modal_cancel():
 	Audio.play("sounds/toggle.ogg", -30)
@@ -1091,7 +1121,7 @@ func _on_save_modal_save(_text := ""):
 	var map_data = {
 		"title": title_text,
 		"cash": map.cash,
-		"cells": MapLoader.read_cells(gridmap, json_id_map, position_config_data, cell_uuids, barrier_item_id)
+		"cells": MapLoader.read_cells(gridmap, json_id_map, position_config_data, cell_uuids, barrier_item_id, CELL_SIZE)
 	}
 	if map.character_position != Vector3.ZERO:
 		map_data["character"] = {"x": map.character_position.x, "y": map.character_position.y, "z": map.character_position.z}

@@ -35,7 +35,7 @@ static func load_map(filename: String) -> Dictionary:
 
 # Save a map dictionary to res://maps/ as JSON
 static func save_map(data: Dictionary, filename: String) -> bool:
-	var path = "res://maps/" + filename
+	var path = filename if filename.begins_with("res://") else "res://maps/" + filename
 	var json_str = JSON.stringify(data, "\t")
 	var file = FileAccess.open(path, FileAccess.WRITE)
 	if not file:
@@ -76,17 +76,22 @@ static func build_mesh_library(defs: Dictionary) -> MeshLibrary:
 	return lib
 
 # Place cells from map data onto a GridMap using the id_map
-static func place_cells(gridmap: GridMap, map_data: Dictionary, id_map: Dictionary):
+static func place_cells(gridmap: GridMap, map_data: Dictionary, id_map: Dictionary, cell_size: float = 0.25):
+	var inv = 1.0 / cell_size
 	for cell in map_data.get("cells", []):
 		var sid = cell["id"]
 		var item = id_map.get(sid, -1)
 		if item >= 0:
-			var pos = Vector3i(cell.get("x", 0), cell.get("y", 0), cell.get("z", 0))
+			var pos = Vector3i(
+				int(round(cell.get("x", 0) * inv)),
+				int(round(cell.get("y", 0) * inv)),
+				int(round(cell.get("z", 0) * inv))
+			)
 			var orient = cell.get("orient", 0)
 			gridmap.set_cell_item(pos, item, orient)
 
 # Get cells from a GridMap back into map format using reverse id_map
-static func read_cells(gridmap: GridMap, id_map: Dictionary, position_config: Dictionary = {}, cell_uuids: Dictionary = {}, barrier_item: int = -1) -> Array:
+static func read_cells(gridmap: GridMap, id_map: Dictionary, position_config: Dictionary = {}, cell_uuids: Dictionary = {}, barrier_item: int = -1, cell_size: float = 0.25) -> Array:
 	var rev_map = {}
 	for key in id_map:
 		rev_map[id_map[key]] = key
@@ -99,9 +104,9 @@ static func read_cells(gridmap: GridMap, id_map: Dictionary, position_config: Di
 		if sid != "":
 			var entry = {
 				"id": sid,
-				"x": cell_pos.x,
-				"y": cell_pos.y,
-				"z": cell_pos.z,
+				"x": cell_pos.x * cell_size,
+				"y": cell_pos.y * cell_size,
+				"z": cell_pos.z * cell_size,
 				"orient": gridmap.get_cell_item_orientation(cell_pos)
 			}
 			var cell_key = "%d,%d,%d" % [cell_pos.x, cell_pos.y, cell_pos.z]

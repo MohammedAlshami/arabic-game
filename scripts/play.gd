@@ -1,10 +1,12 @@
 extends Node3D
 
 const MapLoader = preload("res://scripts/map_loader.gd")
-const INITIAL_RADIUS = 80
-const TRIGGER_DISTANCE = 50
-const EXPAND_CHUNK = 30
-const GROUND_MARGIN = 10
+const CELL_SIZE := 0.25
+const CELL_INV := 4.0
+const INITIAL_RADIUS = 80 * CELL_INV
+const TRIGGER_DISTANCE = 50 * CELL_INV
+const EXPAND_CHUNK = 30 * CELL_INV
+const GROUND_MARGIN = 10 * CELL_INV
 const SAVE_DEBOUNCE_SECS = 2.0
 
 var gridmap: GridMap
@@ -66,7 +68,7 @@ func load_map():
 
 	id_map = mesh_lib.get_meta("id_map")
 	grass_block_id = id_map.get("block-grass", -1)
-	MapLoader.place_cells(gridmap, map_data, id_map)
+	MapLoader.place_cells(gridmap, map_data, id_map, CELL_SIZE)
 
 	# Add barrier item
 	var barrier_id = mesh_lib.get_last_unused_item_id()
@@ -79,10 +81,15 @@ func load_map():
 	mesh_lib.set_item_shapes(barrier_id, [barrier_col])
 	id_map["_barrier"] = barrier_id
 
-	# Clear item collision shapes (keep barriers)
+	# Use exact mesh geometry as collision for each item
 	for item_id in mesh_lib.get_item_list():
 		if item_id != barrier_id:
 			mesh_lib.set_item_shapes(item_id, [])
+			var mesh = mesh_lib.get_item_mesh(item_id)
+			if mesh:
+				var trimesh = mesh.create_trimesh_shape()
+				if trimesh:
+					mesh_lib.set_item_shapes(item_id, [trimesh])
 
 	# Load interaction data from map cells
 	interaction_data = {}
@@ -99,8 +106,6 @@ func load_map():
 
 	var span = max(bounds_max.x - bounds_min.x, bounds_max.z - bounds_min.z)
 	_create_ground_plane()
-
-	_build_cell_collision()
 
 	char_models = [
 		"res://models/plat_models/character.glb",
@@ -180,42 +185,6 @@ func _spawn_player(pos: Vector3):
 	add_child(view)
 	view.position = player.position
 	add_child(player)
-
-func _build_cell_collision():
-	var collision_container = Node3D.new()
-	collision_container.name = "CellCollision"
-	add_child(collision_container)
-	var box_mat = BoxShape3D.new()
-	box_mat.size = Vector3(1, 1, 1)
-	var seen: Dictionary = {}
-	for cell_pos in gridmap.get_used_cells():
-		var item = gridmap.get_cell_item(cell_pos)
-		if item < 0:
-			continue
-		var mesh = gridmap.mesh_library.get_item_mesh(item)
-		if not mesh:
-			continue
-		var xform = gridmap.mesh_library.get_item_mesh_transform(item)
-		var aabb = xform * mesh.get_aabb()
-		var min_x = int(ceil(aabb.position.x))
-		var max_x = int(floor(aabb.position.x + aabb.size.x))
-		var min_y = int(ceil(aabb.position.y))
-		var max_y = int(floor(aabb.position.y + aabb.size.y))
-		var min_z = int(ceil(aabb.position.z))
-		var max_z = int(floor(aabb.position.z + aabb.size.z))
-		for ox in range(min_x, max_x + 1):
-			for oy in range(min_y, max_y + 1):
-				for oz in range(min_z, max_z + 1):
-					var key = "%d,%d,%d" % [cell_pos.x + ox, cell_pos.y + oy, cell_pos.z + oz]
-					if seen.has(key):
-						continue
-					seen[key] = true
-					var body = StaticBody3D.new()
-					var col = CollisionShape3D.new()
-					col.shape = box_mat
-					body.add_child(col)
-					body.position = Vector3(cell_pos.x + ox, cell_pos.y + oy, cell_pos.z + oz)
-					collision_container.add_child(body)
 
 func _find_anim_player(node: Node) -> AnimationPlayer:
 	if node is AnimationPlayer:
@@ -418,7 +387,7 @@ func _schedule_save():
 func _save_map():
 	if not unsaved_changes:
 		return
-	var cells = MapLoader.read_cells(gridmap, id_map)
+	var cells = MapLoader.read_cells(gridmap, id_map, {}, {}, -1, CELL_SIZE)
 	map_data["cells"] = cells
 	MapLoader.save_map(map_data, filename)
 	unsaved_changes = false
@@ -593,7 +562,9 @@ func _raycast_hover():
 	var plane_hit = plane.intersects_ray(origin, normal)
 	var search_center = Vector3.ZERO
 	if plane_hit != null:
-		search_center = Vector3(round(plane_hit.x), 0, round(plane_hit.z))
+		var scx = round(plane_hit.x * CELL_INV)
+		var scz = round(plane_hit.z * CELL_INV)
+		search_center = Vector3(scx, 0, scz)
 
 	for cell_pos in gridmap.get_used_cells():
 		# Quick XZ distance check to skip far cells
