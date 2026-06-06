@@ -886,5 +886,29 @@
     "model": "res://models/characters/Rogue_Hooded.glb",
     "price": 0,
     "scale": 1
+  },
+  {
+    "id": "coin",
+    "model": "res://models/coin.glb",
+    "price": 15,
+    "scale": 1
+  },
+  {
+    "id": "vehicle-truck-yellow",
+    "model": "res://models/vehicles/vehicle-truck-yellow.glb",
+    "price": 200,
+    "scale": 1
+  },
+  {
+    "id": "vehicle-truck-red",
+    "model": "res://models/vehicles/vehicle-truck-red.glb",
+    "price": 200,
+    "scale": 1
+  },
+  {
+    "id": "vehicle-motorcycle",
+    "model": "res://models/vehicles/vehicle-motorcycle.glb",
+    "price": 150,
+    "scale": 1
   }
 ]

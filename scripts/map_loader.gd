@@ -137,12 +137,37 @@ static func _get_mesh(packed_scene):
 	var state = packed_scene.get_state()
 	var meshes: Array[Mesh] = []
 	for i in range(state.get_node_count()):
-		if state.get_node_type(i) == "MeshInstance3D":
-			for j in range(state.get_node_property_count(i)):
-				if state.get_node_property_name(i, j) == "mesh":
-					var v = state.get_node_property_value(i, j)
-					if v:
-						meshes.append(v.duplicate())
+		if state.get_node_type(i) != "MeshInstance3D":
+			continue
+		var mesh_data: Mesh = null
+		var node_xform = Transform3D.IDENTITY
+		for j in range(state.get_node_property_count(i)):
+			var pname = state.get_node_property_name(i, j)
+			if pname == "mesh":
+				var v = state.get_node_property_value(i, j)
+				if v:
+					mesh_data = v.duplicate()
+			elif pname == "transform":
+				node_xform = state.get_node_property_value(i, j)
+		if not mesh_data:
+			continue
+
+		var baked = ArrayMesh.new()
+		for k in range(mesh_data.get_surface_count()):
+			var arrays = mesh_data.surface_get_arrays(k)
+			var verts = arrays[Mesh.ARRAY_VERTEX]
+			if verts:
+				for vi in range(verts.size()):
+					verts[vi] = node_xform * verts[vi]
+				arrays[Mesh.ARRAY_VERTEX] = verts
+			var mat = mesh_data.surface_get_material(k)
+			var prim = mesh_data.surface_get_primitive_type(k)
+			var idx = baked.get_surface_count()
+			baked.add_surface_from_arrays(prim, arrays)
+			if mat:
+				baked.surface_set_material(idx, mat)
+		meshes.append(baked)
+
 	if meshes.is_empty():
 		return null
 	if meshes.size() == 1:

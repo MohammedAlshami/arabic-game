@@ -34,6 +34,15 @@
 			"font_color": "#000000",
 			"font_size": 32,
 			"action": "structure"
+		},
+		{
+			"id": "drive",
+			"text": "DRIVE",
+			"color": "#60c060",
+			"hover_color": "#70d070",
+			"font_color": "#000000",
+			"font_size": 32,
+			"action": "drive"
 		}
 	],
 	"no_maps_text": "No maps yet. Ask the AI to create one for you!",

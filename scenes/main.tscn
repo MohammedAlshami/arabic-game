@@ -101,7 +101,7 @@ environment = ExtResource("1_yndf3")
 fov = 20.0
 
 [node name="GridMap" type="GridMap" parent="."]
-cell_size = Vector3(1, 1, 1)
+cell_size = Vector3(0.25, 0.25, 0.25)
 cell_center_x = false
 cell_center_y = false
 cell_center_z = false

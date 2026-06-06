@@ -2,17 +2,17 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
-uid="uid://bljfakde3yxyh"
-path="res://.godot/imported/engine.ogg-644dcddab11718951a3280f37c3af4e2.oggvorbisstr"
+uid="uid://j6x2is8pyt8y"
+path="res://.godot/imported/engine.ogg-254ef2e050080878a082fcee107162bd.oggvorbisstr"
 
 [deps]
 
-source_file="res://sounds/engine.ogg"
-dest_files=["res://.godot/imported/engine.ogg-644dcddab11718951a3280f37c3af4e2.oggvorbisstr"]
+source_file="res://audio/engine.ogg"
+dest_files=["res://.godot/imported/engine.ogg-254ef2e050080878a082fcee107162bd.oggvorbisstr"]
 
 [params]
 
-loop=false
+loop=true
 loop_offset=0
 bpm=0
 beat_count=0

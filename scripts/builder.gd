@@ -79,6 +79,10 @@ var barrier_item_id := -1
 var barrier_marker: MeshInstance3D = null
 var structure_edit_mode := false
 var placed_occupied: Dictionary = {}  # cell_key -> Dictionary of occupied cell keys
+var _build_repeat: float = 0.0
+var _cycle_repeat: float = 0.0
+var _cycle_dir: int = 0
+const REPEAT_DELAY: float = 0.15
 
 func _ready():
 	map = DataMap.new()
@@ -219,6 +223,7 @@ func build_categories():
 		"Nature": [],
 		"Furniture": [],
 		"Blocks": [],
+		"Vehicles": [],
 	}
 
 	var sid_list = json_defs.keys()
@@ -232,6 +237,8 @@ func build_categories():
 			categories["Furniture"].append(i)
 		elif sid.begins_with("block-"):
 			categories["Blocks"].append(i)
+		elif sid.begins_with("vehicle-"):
+			categories["Vehicles"].append(i)
 
 func build_struct_modal():
 	struct_modal = Control.new()
@@ -701,6 +708,18 @@ func _process(delta):
 	action_save_modal()
 	action_load_modal()
 
+	_build_repeat = max(_build_repeat - delta, 0.0)
+	_cycle_repeat = max(_cycle_repeat - delta, 0.0)
+
+	if _cycle_dir != 0 and _cycle_repeat <= 0.0:
+		if character_mode:
+			_cycle_character(_cycle_dir)
+		else:
+			_cycle_structure(_cycle_dir)
+		_cycle_repeat = REPEAT_DELAY
+	if not Input.is_key_pressed(KEY_Q) and not Input.is_key_pressed(KEY_E):
+		_cycle_dir = 0
+
 	var mouse_pos = get_viewport().get_mouse_position()
 	var world_position = plane.intersects_ray(
 		view_camera.project_ray_origin(mouse_pos),
@@ -769,7 +788,7 @@ func _process(delta):
 				delete_marker.visible = false
 		else:
 			delete_marker.visible = false
-		if has_item and Input.is_action_just_pressed("build"):
+		if has_item and _build_repeat <= 0.0 and Input.is_action_pressed("build"):
 			var dck = cell_key(target_pos)
 			var uuid = cell_uuids.get(dck, "")
 			var to_delete: Array[String] = [dck]
@@ -785,13 +804,15 @@ func _process(delta):
 					gridmap.set_cell_item(Vector3i(int(parts[0]), int(parts[1]), int(parts[2])), -1)
 			Audio.play("sounds/removal-a.ogg, sounds/removal-b.ogg, sounds/removal-c.ogg, sounds/removal-d.ogg", -20)
 			auto_save()
+			_build_repeat = REPEAT_DELAY
 	elif barrier_mode:
 		barrier_marker.position = lerp(barrier_marker.position, gridmap_position, min(delta * 40, 1.0))
-		if Input.is_action_just_pressed("build"):
+		if _build_repeat <= 0.0 and Input.is_action_pressed("build"):
 			var bp = to_cell(gridmap_position)
 			if gridmap.get_cell_item(bp) < 0:
 				gridmap.set_cell_item(bp, barrier_item_id)
 				Audio.play("sounds/placement-a.ogg, sounds/placement-b.ogg, sounds/placement-c.ogg, sounds/placement-d.ogg", -20)
+				_build_repeat = REPEAT_DELAY
 	elif character_mode:
 		character_marker.position = lerp(character_marker.position, gridmap_position + Vector3(0, 0.5, 0), min(delta * 40, 1.0))
 		action_place_character(gridmap_position)
@@ -808,13 +829,39 @@ func get_mesh(packed_scene):
 		return null
 	var scene_state:SceneState = packed_scene.get_state()
 	var meshes: Array[Mesh] = []
+	var xforms: Array[Transform3D] = []
 	for i in range(scene_state.get_node_count()):
-		if scene_state.get_node_type(i) == "MeshInstance3D":
-			for j in range(scene_state.get_node_property_count(i)):
-				if scene_state.get_node_property_name(i, j) == "mesh":
-					var prop_value = scene_state.get_node_property_value(i, j)
-					if prop_value:
-						meshes.append(prop_value.duplicate())
+		if scene_state.get_node_type(i) != "MeshInstance3D":
+			continue
+		var mesh_data: Mesh = null
+		var node_xform = Transform3D.IDENTITY
+		for j in range(scene_state.get_node_property_count(i)):
+			var pname = scene_state.get_node_property_name(i, j)
+			if pname == "mesh":
+				var v = scene_state.get_node_property_value(i, j)
+				if v:
+					mesh_data = v.duplicate()
+			elif pname == "transform":
+				node_xform = scene_state.get_node_property_value(i, j)
+		if not mesh_data:
+			continue
+
+		var baked = ArrayMesh.new()
+		for k in range(mesh_data.get_surface_count()):
+			var arrays = mesh_data.surface_get_arrays(k)
+			var verts = arrays[Mesh.ARRAY_VERTEX]
+			if verts:
+				for vi in range(verts.size()):
+					verts[vi] = node_xform * verts[vi]
+				arrays[Mesh.ARRAY_VERTEX] = verts
+			var mat = mesh_data.surface_get_material(k)
+			var prim = mesh_data.surface_get_primitive_type(k)
+			var idx = baked.get_surface_count()
+			baked.add_surface_from_arrays(prim, arrays)
+			if mat:
+				baked.surface_set_material(idx, mat)
+		meshes.append(baked)
+
 	if meshes.is_empty():
 		return null
 	if meshes.size() == 1:
@@ -864,7 +911,7 @@ func _get_item_occupied_cells(item_id: int, cell_pos: Vector3) -> Array:
 	return cells
 
 func action_build(gridmap_position):
-	if Input.is_action_just_pressed("build"):
+	if _build_repeat <= 0.0 and Input.is_action_pressed("build"):
 		var occupy = _get_item_occupied_cells(index, gridmap_position)
 		var occupy_set = {}
 		for c in occupy:
@@ -888,12 +935,13 @@ func action_build(gridmap_position):
 			update_cash()
 			Audio.play("sounds/placement-a.ogg, sounds/placement-b.ogg, sounds/placement-c.ogg, sounds/placement-d.ogg", -20)
 			auto_save()
+			_build_repeat = REPEAT_DELAY
 			if xray_mode:
 				_set_xray_mode(false)
 				_set_xray_mode(true)
 
 func action_place_character(gridmap_position):
-	if Input.is_action_just_pressed("build"):
+	if _build_repeat <= 0.0 and Input.is_action_pressed("build"):
 		map.character_position = gridmap_position
 		character_marker.position = gridmap_position + Vector3(0, 0.5, 0)
 		character_mode = false
@@ -902,11 +950,12 @@ func action_place_character(gridmap_position):
 			character_marker.set_surface_override_material(0, character_dim_mat)
 		Audio.play("sounds/placement-a.ogg, sounds/placement-b.ogg", -20)
 		auto_save()
+		_build_repeat = REPEAT_DELAY
 
 func action_demolish(gridmap_position):
 	if delete_mode:
 		return
-	if Input.is_action_just_pressed("demolish"):
+	if _build_repeat <= 0.0 and Input.is_action_pressed("demolish"):
 		if character_mode and map.character_position.distance_to(gridmap_position) < 1:
 			map.character_position = Vector3.ZERO
 			character_marker.visible = false
@@ -1150,16 +1199,12 @@ func _input(event):
 			get_tree().change_scene_to_file("res://scenes/menu.tscn")
 			return
 		if event.keycode == KEY_Q and not delete_mode:
-			if character_mode:
-				_cycle_character(-1)
-			else:
-				_cycle_structure(-1)
+			_cycle_dir = -1
+			_cycle_repeat = 0.0
 			return
 		if event.keycode == KEY_E and not delete_mode:
-			if character_mode:
-				_cycle_character(1)
-			else:
-				_cycle_structure(1)
+			_cycle_dir = 1
+			_cycle_repeat = 0.0
 			return
 		if event.keycode == KEY_Z and not structure_edit_mode:
 			if struct_modal and struct_modal.visible:
@@ -1196,7 +1241,6 @@ func _input(event):
 				delete_marker.visible = false
 				character_mode = false
 				_set_character_mode(false)
-			return
 			return
 
 	if event.is_action_pressed("ui_cancel"):

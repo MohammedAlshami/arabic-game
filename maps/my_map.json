@@ -1,14 +1,19 @@
 {
-	"cash": 9860,
+	"cash": 9800,
 	"cells": [
 		{
-			"id": "building-small-c",
+			"id": "vehicle-truck-red",
 			"orient": 0,
-			"uuid": "df93af49-e467-551a-70d8-30bc172fc010",
-			"x": -5.25,
+			"uuid": "b7a439ce-0f53-e586-5c30-67384401135e",
+			"x": -3.5,
 			"y": 0.0,
-			"z": 0.25
+			"z": -4.25
 		}
 	],
+	"character": {
+		"x": -0.75,
+		"y": 0.0,
+		"z": -6.5
+	},
 	"title": "res://maps/my map"
 }

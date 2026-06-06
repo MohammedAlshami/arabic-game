@@ -105,7 +105,8 @@ func _physics_process(delta):
 
 	# Crash sound — play just before impact
 	if falling_hard and not crash_sound_played:
-		var space = get_world_3d().direct_space_state
+		var world3d = get_world_3d()
+		var space = world3d.direct_space_state if world3d else null
 		if space:
 			var from = position
 			var to = position + Vector3(0, -4, 0)

@@ -76,6 +76,8 @@ func _connect_buttons():
 				btn.pressed.connect(_on_edit)
 			elif action == "structure":
 				btn.pressed.connect(_on_structure)
+			elif action == "drive":
+				btn.pressed.connect(_on_drive)
 
 func _on_play():
 	modal_title.text = home_data.get("modal", {}).get("play_title", "Select Map")
@@ -130,6 +132,10 @@ func _on_map_selected(filename: String, is_edit: bool):
 	else:
 		GameState.current_mode = GameState.Mode.PLAY
 		get_tree().change_scene_to_file("res://scenes/play.tscn")
+
+func _on_drive():
+	GameState.current_mode = GameState.Mode.DRIVE
+	get_tree().change_scene_to_file("res://scenes/play_car.tscn")
 
 func _on_structure():
 	modal_title.text = home_data.get("modal", {}).get("structure_title", "Select Structure")

@@ -32,6 +32,12 @@ var interaction_data: Dictionary = {}
 var interaction_popup: Control = null
 var crosshair: Control = null
 
+var _driving: bool = false
+var _driven_vehicle: Node3D = null
+var _drive_view: Node3D = null
+var _vehicle_cell: Vector3 = Vector3.ZERO
+var VEHICLE_IDS: Array = ["vehicle-truck-yellow", "vehicle-truck-red", "vehicle-motorcycle"]
+
 var play_plane: Plane
 var hover_marker: MeshInstance3D = null
 var char_models: Array = []
@@ -121,11 +127,7 @@ func load_map():
 	day_night = load("res://scripts/day_night.gd").new()
 	add_child(day_night)
 
-	var spawn_pos = Vector3(0, 2, 0)
-	if map_data.has("character"):
-		var ch = map_data["character"]
-		spawn_pos = Vector3(ch.get("x", 0), ch.get("y", 0), ch.get("z", 0))
-	_spawn_player(spawn_pos)
+	_spawn_player(Vector3(0, 2, 0))
 
 	var env_node = $WorldEnvironment
 	if env_node and env_node.environment:
@@ -248,6 +250,12 @@ func _unhandled_input(event):
 	if event.is_action_pressed("ui_cancel"):
 		get_tree().change_scene_to_file("res://scenes/menu.tscn")
 		return
+	if event.is_action_pressed("drive"):
+		if _driving:
+			_exit_vehicle()
+		else:
+			_try_enter_vehicle()
+		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_BACKSPACE:
 			get_tree().change_scene_to_file("res://scenes/menu.tscn")
@@ -316,6 +324,15 @@ func _physics_process(delta):
 		save_timer -= delta
 		if save_timer <= 0:
 			_save_map()
+
+	if _driving and _driven_vehicle and _drive_view:
+		var vp = _driven_vehicle.get_vehicle_position()
+		_drive_view.position = _drive_view.position.lerp(vp, delta * 4)
+		var speed = abs(_driven_vehicle.linear_speed)
+		var tz = remap(clamp(speed, 0.0, 1.0), 0.0, 1.0, 10, 20)
+		var cam = _drive_view.find_child("Camera", true, false)
+		if cam:
+			cam.position.z = lerp(cam.position.z, tz, delta * 0.5)
 
 func _generate_initial_area(center: Vector3i):
 	if grass_block_id < 0:
@@ -392,6 +409,78 @@ func _save_map():
 	MapLoader.save_map(map_data, filename)
 	unsaved_changes = false
 
+func _try_enter_vehicle() -> bool:
+	if not gridmap or not player:
+		return false
+	var cell = gridmap.local_to_map(player.global_position)
+	var ml = gridmap.mesh_library
+	if not ml or not ml.has_meta("id_map"):
+		return false
+	var loaded_id_map = ml.get_meta("id_map")
+	var rev_map = {}
+	for key in loaded_id_map:
+		rev_map[loaded_id_map[key]] = key
+
+	for x in range(-2, 3):
+		for z in range(-2, 3):
+			var check = Vector3i(cell.x + x, 0, cell.z + z)
+			var item = gridmap.get_cell_item(check)
+			if item < 0:
+				continue
+			var sid = rev_map.get(item, "")
+			if sid in VEHICLE_IDS:
+				_enter_vehicle(check)
+				return true
+	return false
+
+func _enter_vehicle(cell_pos: Vector3i):
+	_driving = true
+	_vehicle_cell = Vector3(cell_pos)
+
+	var vehicle_scene = load("res://scenes/objects/vehicle.tscn")
+	_driven_vehicle = vehicle_scene.instantiate()
+	_driven_vehicle.position = gridmap.map_to_local(cell_pos)
+	add_child(_driven_vehicle)
+
+	player.set_process(false)
+	player.set_physics_process(false)
+	player.visible = false
+	player.collision_layer = 0
+	player.collision_mask = 0
+
+	_drive_view = Node3D.new()
+	var cam = Camera3D.new()
+	cam.current = true
+	cam.position.z = 10
+	cam.position.y = 3
+	_drive_view.add_child(cam)
+	add_child(_drive_view)
+
+func _exit_vehicle():
+	if _driven_vehicle:
+		_driven_vehicle.queue_free()
+		_driven_vehicle = null
+	if _drive_view:
+		_drive_view.queue_free()
+		_drive_view = null
+
+	var exit_pos = gridmap.map_to_local(Vector3i(_vehicle_cell))
+	player.position = exit_pos + Vector3(0, 1, 0)
+	player.set_process(true)
+	player.set_physics_process(true)
+	player.visible = true
+	player.collision_layer = 1
+	player.collision_mask = 1
+
+	if view:
+		var view_cam = view.find_child("Camera", true, false)
+		if view_cam:
+			view_cam.current = true
+
+	_driving = false
+
+func _auto_test_vehicle():
+	push_error("=== AUTO TEST VEHICLE ===")
 func _build_interaction_popup():
 	var canvas_layer = CanvasLayer.new()
 	canvas_layer.name = "InteractionCanvas"

@@ -3,12 +3,12 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://bqkmsniybu8gn"
+uid="uid://b34e2pvbemfac"
 path="res://.godot/imported/vehicle-truck-red.glb-1e109a8e62d7c05f5b4d61e31d503433.scn"
 
 [deps]
 
-source_file="res://models/vehicles/vehicle-truck-red.glb"
+source_file="res://models/vehicle-truck-red.glb"
 dest_files=["res://.godot/imported/vehicle-truck-red.glb-1e109a8e62d7c05f5b4d61e31d503433.scn"]
 
 [params]
@@ -17,7 +17,7 @@ nodes/root_type=""
 nodes/root_name=""
 nodes/root_script=null
 nodes/apply_root_scale=true
-nodes/root_scale=1.0
+nodes/root_scale=0.5
 nodes/import_as_skeleton_bones=false
 nodes/use_name_suffixes=true
 nodes/use_node_type_suffixes=true
@@ -38,5 +38,6 @@ materials/extract=0
 materials/extract_format=0
 materials/extract_path=""
 _subresources={}
-gltf/naming_version=2
+gltf/naming_version=1
 gltf/embedded_image_handling=1
+
