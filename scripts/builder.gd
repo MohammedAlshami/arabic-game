@@ -82,6 +82,9 @@ var placed_occupied: Dictionary = {}  # cell_key -> Dictionary of occupied cell 
 var _build_repeat: float = 0.0
 var _cycle_repeat: float = 0.0
 var _cycle_dir: int = 0
+var _manual_placement_active := false
+var _manual_placement_pos := Vector3.ZERO
+var _last_mouse_pos := Vector2(-1, -1)
 const REPEAT_DELAY: float = 0.15
 
 func _ready():
@@ -224,6 +227,7 @@ func build_categories():
 		"Furniture": [],
 		"Blocks": [],
 		"Vehicles": [],
+		"KayKit": [],
 	}
 
 	var sid_list = json_defs.keys()
@@ -239,6 +243,8 @@ func build_categories():
 			categories["Blocks"].append(i)
 		elif sid.begins_with("vehicle-"):
 			categories["Vehicles"].append(i)
+		elif sid.begins_with("kaykit-"):
+			categories["KayKit"].append(i)
 
 func build_struct_modal():
 	struct_modal = Control.new()
@@ -317,7 +323,7 @@ func build_struct_modal():
 
 	var preview_size := 180
 
-	var tab_order := ["Buildings", "Nature"]
+	var tab_order := ["Buildings", "Nature", "KayKit"]
 
 	for cat_name in tab_order:
 		var scroll = ScrollContainer.new()
@@ -721,11 +727,16 @@ func _process(delta):
 		_cycle_dir = 0
 
 	var mouse_pos = get_viewport().get_mouse_position()
+	if _manual_placement_active and mouse_pos != _last_mouse_pos:
+		_manual_placement_active = false
+	_last_mouse_pos = mouse_pos
+
 	var world_position = plane.intersects_ray(
 		view_camera.project_ray_origin(mouse_pos),
 		view_camera.project_ray_normal(mouse_pos))
-
 	var gridmap_position = Vector3(snap(world_position.x), y_offset, snap(world_position.z))
+	if _manual_placement_active:
+		gridmap_position = _manual_placement_pos
 
 	if delete_mode:
 		delete_cursor.position = mouse_pos
@@ -738,7 +749,6 @@ func _process(delta):
 				break
 		var has_item = target_pos.y >= 0
 		if not has_item:
-			var search_radius = 2.0
 			for dx in range(-2, 3):
 				for dz in range(-2, 3):
 					var nearby = Vector3(target_pos.x + dx * CELL_SIZE, target_pos.y, target_pos.z + dz * CELL_SIZE)
@@ -760,21 +770,6 @@ func _process(delta):
 			if item >= 0:
 				var mesh = gridmap.mesh_library.get_item_mesh(item)
 				if mesh:
-					var group_center = target_pos
-					var dck = cell_key(target_pos)
-					var uuid = cell_uuids.get(dck, "")
-					if uuid != "":
-						var group_cells_world: Array[Vector3] = []
-						for ck in cell_uuids:
-							if cell_uuids[ck] == uuid:
-								var parts = ck.split(",")
-								if parts.size() == 3:
-									group_cells_world.append(to_world(Vector3i(int(parts[0]), int(parts[1]), int(parts[2]))))
-						if group_cells_world.size() > 1:
-							var avg = Vector3.ZERO
-							for c in group_cells_world:
-								avg += c
-							group_center = avg / group_cells_world.size()
 					delete_marker.mesh = mesh
 					var xform = gridmap.mesh_library.get_item_mesh_transform(item)
 					delete_marker.scale = xform.basis.get_scale() * 1.1
@@ -888,30 +883,34 @@ func _generate_uuid() -> String:
 			uuid += hex[randi() % 16]
 	return uuid
 
+func _get_hovered_cell() -> Vector3i:
+	var ray = view_camera.get_node_or_null("PickRay") as RayCast3D
+	if not ray:
+		return Vector3i(-1, -1, -1)
+	var mouse_pos = get_viewport().get_mouse_position()
+	var origin = view_camera.project_ray_origin(mouse_pos)
+	var normal = view_camera.project_ray_normal(mouse_pos)
+	ray.global_position = origin
+	ray.target_position = normal * 200.0
+	ray.force_raycast_update()
+	if ray.is_colliding():
+		var col_point = ray.get_collision_point()
+		var cell = to_cell(col_point)
+		if gridmap.get_cell_item(cell) >= 0:
+			return cell
+		for dx in range(-1, 2):
+			for dz in range(-1, 2):
+				for y in range(10, -1, -1):
+					var check = Vector3i(cell.x + dx, y, cell.z + dz)
+					if gridmap.get_cell_item(check) >= 0:
+						return check
+	return Vector3i(-1, -1, -1)
+
 func _get_item_occupied_cells(item_id: int, cell_pos: Vector3) -> Array:
-	var mesh = xray_original_meshes.get(item_id) if xray_original_meshes.has(item_id) else gridmap.mesh_library.get_item_mesh(item_id)
-	if not mesh:
-		return [cell_pos]
-	var xform = gridmap.mesh_library.get_item_mesh_transform(item_id)
-	var aabb = xform * mesh.get_aabb()
+	return [cell_pos]
 
-	var cells: Array = []
-	var eps = 0.001
-	var min_x = int(floor((aabb.position.x + cell_pos.x) / CELL_SIZE))
-	var max_x = int(floor((aabb.position.x + aabb.size.x + cell_pos.x - eps) / CELL_SIZE))
-	var min_y = int(floor((aabb.position.y + cell_pos.y) / CELL_SIZE))
-	var max_y = int(floor((aabb.position.y + aabb.size.y + cell_pos.y - eps) / CELL_SIZE))
-	var min_z = int(floor((aabb.position.z + cell_pos.z) / CELL_SIZE))
-	var max_z = int(floor((aabb.position.z + aabb.size.z + cell_pos.z - eps) / CELL_SIZE))
-
-	for ox in range(min_x, max_x + 1):
-		for oy in range(min_y, max_y + 1):
-			for oz in range(min_z, max_z + 1):
-				cells.append(Vector3(ox * CELL_SIZE, oy * CELL_SIZE, oz * CELL_SIZE))
-	return cells
-
-func action_build(gridmap_position):
-	if _build_repeat <= 0.0 and Input.is_action_pressed("build"):
+func action_build(gridmap_position, force := false):
+	if _build_repeat <= 0.0 and (force or Input.is_action_pressed("build")):
 		var occupy = _get_item_occupied_cells(index, gridmap_position)
 		var occupy_set = {}
 		for c in occupy:
@@ -1241,6 +1240,85 @@ func _input(event):
 				delete_marker.visible = false
 				character_mode = false
 				_set_character_mode(false)
+			return
+
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_SPACE:
+			if not delete_mode and not barrier_mode and not character_mode:
+				var pos: Vector3
+				if _manual_placement_active:
+					pos = _manual_placement_pos
+				else:
+					var hc = _get_hovered_cell()
+					if hc.x >= 0:
+						pos = to_world(hc)
+						pos.y = y_offset
+					else:
+						var mp = get_viewport().get_mouse_position()
+						var wp = plane.intersects_ray(view_camera.project_ray_origin(mp), view_camera.project_ray_normal(mp))
+						pos = Vector3(snap(wp.x), y_offset, snap(wp.z))
+				action_build(pos, true)
+			get_viewport().set_input_as_handled()
+			return
+		if event.keycode == KEY_LEFT and not delete_mode and not barrier_mode and not character_mode:
+			_manual_placement_active = true
+			if _manual_placement_pos == Vector3.ZERO:
+				var hc = _get_hovered_cell()
+				if hc.x >= 0:
+					_manual_placement_pos = to_world(hc)
+				else:
+					var mp = get_viewport().get_mouse_position()
+					var wp = plane.intersects_ray(view_camera.project_ray_origin(mp), view_camera.project_ray_normal(mp))
+					_manual_placement_pos = Vector3(snap(wp.x), y_offset, snap(wp.z))
+				_manual_placement_pos.y = y_offset
+			_manual_placement_pos.x -= CELL_SIZE
+			_manual_placement_pos.x = snap(_manual_placement_pos.x)
+			get_viewport().set_input_as_handled()
+			return
+		if event.keycode == KEY_RIGHT and not delete_mode and not barrier_mode and not character_mode:
+			_manual_placement_active = true
+			if _manual_placement_pos == Vector3.ZERO:
+				var hc = _get_hovered_cell()
+				if hc.x >= 0:
+					_manual_placement_pos = to_world(hc)
+				else:
+					var mp = get_viewport().get_mouse_position()
+					var wp = plane.intersects_ray(view_camera.project_ray_origin(mp), view_camera.project_ray_normal(mp))
+					_manual_placement_pos = Vector3(snap(wp.x), y_offset, snap(wp.z))
+				_manual_placement_pos.y = y_offset
+			_manual_placement_pos.x += CELL_SIZE
+			_manual_placement_pos.x = snap(_manual_placement_pos.x)
+			get_viewport().set_input_as_handled()
+			return
+		if event.keycode == KEY_UP and not delete_mode and not barrier_mode and not character_mode:
+			_manual_placement_active = true
+			if _manual_placement_pos == Vector3.ZERO:
+				var hc = _get_hovered_cell()
+				if hc.x >= 0:
+					_manual_placement_pos = to_world(hc)
+				else:
+					var mp = get_viewport().get_mouse_position()
+					var wp = plane.intersects_ray(view_camera.project_ray_origin(mp), view_camera.project_ray_normal(mp))
+					_manual_placement_pos = Vector3(snap(wp.x), y_offset, snap(wp.z))
+				_manual_placement_pos.y = y_offset
+			_manual_placement_pos.z -= CELL_SIZE
+			_manual_placement_pos.z = snap(_manual_placement_pos.z)
+			get_viewport().set_input_as_handled()
+			return
+		if event.keycode == KEY_DOWN and not delete_mode and not barrier_mode and not character_mode:
+			_manual_placement_active = true
+			if _manual_placement_pos == Vector3.ZERO:
+				var hc = _get_hovered_cell()
+				if hc.x >= 0:
+					_manual_placement_pos = to_world(hc)
+				else:
+					var mp = get_viewport().get_mouse_position()
+					var wp = plane.intersects_ray(view_camera.project_ray_origin(mp), view_camera.project_ray_normal(mp))
+					_manual_placement_pos = Vector3(snap(wp.x), y_offset, snap(wp.z))
+				_manual_placement_pos.y = y_offset
+			_manual_placement_pos.z += CELL_SIZE
+			_manual_placement_pos.z = snap(_manual_placement_pos.z)
+			get_viewport().set_input_as_handled()
 			return
 
 	if event.is_action_pressed("ui_cancel"):

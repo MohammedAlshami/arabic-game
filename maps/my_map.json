@@ -1,13 +1,21 @@
 {
-	"cash": 9800,
+	"cash": 10000,
 	"cells": [
 		{
-			"id": "vehicle-truck-red",
+			"id": "block-bricks_a",
 			"orient": 0,
-			"uuid": "b7a439ce-0f53-e586-5c30-67384401135e",
-			"x": -3.5,
+			"uuid": "9e1c1510-dccd-8520-1baf-5ec8e7628b2c",
+			"x": 4.5,
 			"y": 0.0,
-			"z": -4.25
+			"z": 3.25
+		},
+		{
+			"id": "block-bricks_a",
+			"orient": 0,
+			"uuid": "77f67613-59d5-830f-cfb2-7bca2c688f83",
+			"x": 5.75,
+			"y": 0.0,
+			"z": 3.5
 		}
 	],
 	"character": {

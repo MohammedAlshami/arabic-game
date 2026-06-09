@@ -24,6 +24,7 @@
 [ext_resource type="Texture2D" uid="uid://bng0d1sou7c8a" path="res://sprites/coin.png" id="17_cjamx"]
 [ext_resource type="Texture2D" uid="uid://ciwbdik3tmxtp" path="res://sprites/instructions.png" id="22_pm3ni"]
 [ext_resource type="AudioStream" uid="uid://wvfsgkl8qob6" path="res://sounds/ambience.ogg" id="24_y6deb"]
+[ext_resource type="Material" uid="uid://b6jykm2mvew3m" path="res://shaders/water_material.tres" id="25_iavt4"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_q176i"]
 font = ExtResource("16_vlub6")
@@ -51,6 +52,11 @@ corner_radius_top_left = 8
 corner_radius_top_right = 8
 corner_radius_bottom_left = 8
 corner_radius_bottom_right = 8
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_water"]
+size = Vector2(50, 50)
+subdivide_width = 50
+subdivide_depth = 50
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_btn"]
 bg_color = Color(0.25, 0.5, 0.2, 1)
@@ -105,6 +111,10 @@ cell_size = Vector3(0.25, 0.25, 0.25)
 cell_center_x = false
 cell_center_y = false
 cell_center_z = false
+
+[node name="Water" type="MeshInstance3D" parent="."]
+mesh = SubResource("PlaneMesh_water")
+material_override = ExtResource("25_iavt4")
 
 [node name="Sun" type="DirectionalLight3D" parent="."]
 transform = Transform3D(-0.422618, -0.694272, 0.582563, 0, 0.642788, 0.766044, -0.906308, 0.323744, -0.271654, 0, 0, 0)

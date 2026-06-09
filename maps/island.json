@@ -1,0 +1,38 @@
+{
+	"cash": 10000,
+	"cells": [
+		{
+			"id": "block-sand_a",
+			"orient": 0,
+			"uuid": "1eb481ee-43d8-82d9-a2d2-1eecc69bd602",
+			"x": -0.5,
+			"y": 1.75,
+			"z": 2.5
+		},
+		{
+			"id": "block-sand_a",
+			"orient": 0,
+			"uuid": "850a360d-2d5c-eb8d-c016-110069dcfa93",
+			"x": 0.0,
+			"y": 2.0,
+			"z": 4.0
+		},
+		{
+			"id": "block-sand_a",
+			"orient": 0,
+			"uuid": "af0997fa-a79d-be33-1d9e-91409bd8449f",
+			"x": 1.0,
+			"y": 3.75,
+			"z": 5.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "466444b9-75d9-4b74-f334-05ca0b54b955",
+			"x": -0.5,
+			"y": 1.5,
+			"z": 1.0
+		}
+	],
+	"title": "island"
+}

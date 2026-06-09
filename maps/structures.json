@@ -910,5 +910,317 @@
     "model": "res://models/vehicles/vehicle-motorcycle.glb",
     "price": 150,
     "scale": 1
-  }
+  },
+    {
+      "id": "kaykit-detail_desert",
+      "model": "res://models/kaykit/mini_game_variety/detail_desert.dae",
+      "price": 10,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-detail_forest",
+      "model": "res://models/kaykit/mini_game_variety/detail_forest.dae",
+      "price": 10,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-plantA_desert",
+      "model": "res://models/kaykit/mini_game_variety/plantA_desert.dae",
+      "price": 10,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-plantA_forest",
+      "model": "res://models/kaykit/mini_game_variety/plantA_forest.dae",
+      "price": 10,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-plantB_desert",
+      "model": "res://models/kaykit/mini_game_variety/plantB_desert.dae",
+      "price": 10,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-plantB_forest",
+      "model": "res://models/kaykit/mini_game_variety/plantB_forest.dae",
+      "price": 10,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-rocksA_desert",
+      "model": "res://models/kaykit/mini_game_variety/rocksA_desert.dae",
+      "price": 10,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-rocksA_forest",
+      "model": "res://models/kaykit/mini_game_variety/rocksA_forest.dae",
+      "price": 10,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-rocksB_desert",
+      "model": "res://models/kaykit/mini_game_variety/rocksB_desert.dae",
+      "price": 10,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-rocksB_forest",
+      "model": "res://models/kaykit/mini_game_variety/rocksB_forest.dae",
+      "price": 10,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileHigh_desert",
+      "model": "res://models/kaykit/mini_game_variety/tileHigh_desert.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileHigh_forest",
+      "model": "res://models/kaykit/mini_game_variety/tileHigh_forest.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileHigh_teamBlue",
+      "model": "res://models/kaykit/mini_game_variety/tileHigh_teamBlue.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileHigh_teamRed",
+      "model": "res://models/kaykit/mini_game_variety/tileHigh_teamRed.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileHigh_teamYellow",
+      "model": "res://models/kaykit/mini_game_variety/tileHigh_teamYellow.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileLarge_desert",
+      "model": "res://models/kaykit/mini_game_variety/tileLarge_desert.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileLarge_forest",
+      "model": "res://models/kaykit/mini_game_variety/tileLarge_forest.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileLarge_teamBlue",
+      "model": "res://models/kaykit/mini_game_variety/tileLarge_teamBlue.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileLarge_teamRed",
+      "model": "res://models/kaykit/mini_game_variety/tileLarge_teamRed.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileLarge_teamYellow",
+      "model": "res://models/kaykit/mini_game_variety/tileLarge_teamYellow.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileLow_desert",
+      "model": "res://models/kaykit/mini_game_variety/tileLow_desert.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileLow_forest",
+      "model": "res://models/kaykit/mini_game_variety/tileLow_forest.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileLow_teamBlue",
+      "model": "res://models/kaykit/mini_game_variety/tileLow_teamBlue.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileLow_teamRed",
+      "model": "res://models/kaykit/mini_game_variety/tileLow_teamRed.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileLow_teamYellow",
+      "model": "res://models/kaykit/mini_game_variety/tileLow_teamYellow.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileMedium_desert",
+      "model": "res://models/kaykit/mini_game_variety/tileMedium_desert.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileMedium_forest",
+      "model": "res://models/kaykit/mini_game_variety/tileMedium_forest.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileMedium_teamBlue",
+      "model": "res://models/kaykit/mini_game_variety/tileMedium_teamBlue.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileMedium_teamRed",
+      "model": "res://models/kaykit/mini_game_variety/tileMedium_teamRed.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileMedium_teamYellow",
+      "model": "res://models/kaykit/mini_game_variety/tileMedium_teamYellow.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileSlopeLowHigh_desert",
+      "model": "res://models/kaykit/mini_game_variety/tileSlopeLowHigh_desert.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileSlopeLowHigh_forest",
+      "model": "res://models/kaykit/mini_game_variety/tileSlopeLowHigh_forest.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileSlopeLowHigh_teamBlue",
+      "model": "res://models/kaykit/mini_game_variety/tileSlopeLowHigh_teamBlue.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileSlopeLowHigh_teamRed",
+      "model": "res://models/kaykit/mini_game_variety/tileSlopeLowHigh_teamRed.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileSlopeLowHigh_teamYellow",
+      "model": "res://models/kaykit/mini_game_variety/tileSlopeLowHigh_teamYellow.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileSlopeLowMedium_desert",
+      "model": "res://models/kaykit/mini_game_variety/tileSlopeLowMedium_desert.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileSlopeLowMedium_forest",
+      "model": "res://models/kaykit/mini_game_variety/tileSlopeLowMedium_forest.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileSlopeLowMedium_teamBlue",
+      "model": "res://models/kaykit/mini_game_variety/tileSlopeLowMedium_teamBlue.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileSlopeLowMedium_teamRed",
+      "model": "res://models/kaykit/mini_game_variety/tileSlopeLowMedium_teamRed.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileSlopeLowMedium_teamYellow",
+      "model": "res://models/kaykit/mini_game_variety/tileSlopeLowMedium_teamYellow.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileSlopeMediumHigh_desert",
+      "model": "res://models/kaykit/mini_game_variety/tileSlopeMediumHigh_desert.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileSlopeMediumHigh_forest",
+      "model": "res://models/kaykit/mini_game_variety/tileSlopeMediumHigh_forest.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileSlopeMediumHigh_teamBlue",
+      "model": "res://models/kaykit/mini_game_variety/tileSlopeMediumHigh_teamBlue.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileSlopeMediumHigh_teamRed",
+      "model": "res://models/kaykit/mini_game_variety/tileSlopeMediumHigh_teamRed.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileSlopeMediumHigh_teamYellow",
+      "model": "res://models/kaykit/mini_game_variety/tileSlopeMediumHigh_teamYellow.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileSmall_desert",
+      "model": "res://models/kaykit/mini_game_variety/tileSmall_desert.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileSmall_forest",
+      "model": "res://models/kaykit/mini_game_variety/tileSmall_forest.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileSmall_teamBlue",
+      "model": "res://models/kaykit/mini_game_variety/tileSmall_teamBlue.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileSmall_teamRed",
+      "model": "res://models/kaykit/mini_game_variety/tileSmall_teamRed.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tileSmall_teamYellow",
+      "model": "res://models/kaykit/mini_game_variety/tileSmall_teamYellow.dae",
+      "price": 5,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tree_desert",
+      "model": "res://models/kaykit/mini_game_variety/tree_desert.dae",
+      "price": 10,
+      "scale": 1
+    },
+    {
+      "id": "kaykit-tree_forest",
+      "model": "res://models/kaykit/mini_game_variety/tree_forest.dae",
+      "price": 10,
+      "scale": 1
+    }
 ]

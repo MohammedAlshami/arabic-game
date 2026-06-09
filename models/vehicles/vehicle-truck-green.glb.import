@@ -8,7 +8,7 @@ path="res://.godot/imported/vehicle-truck-green.glb-61704668729b08893b4f6c777fad
 
 [deps]
 
-source_file="res://models/vehicle-truck-green.glb"
+source_file="res://models/vehicles/vehicle-truck-green.glb"
 dest_files=["res://.godot/imported/vehicle-truck-green.glb-61704668729b08893b4f6c777fad0f95.scn"]
 
 [params]
@@ -40,4 +40,3 @@ materials/extract_path=""
 _subresources={}
 gltf/naming_version=1
 gltf/embedded_image_handling=1
-

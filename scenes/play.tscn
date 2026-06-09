@@ -2,6 +2,12 @@
 
 [ext_resource type="Script" path="res://scripts/play.gd" id="1"]
 [ext_resource type="Environment" uid="uid://jbptgqvstei3" path="res://scenes/main-environment.tres" id="2"]
+[ext_resource type="Material" uid="uid://b6jykm2mvew3m" path="res://shaders/water_material.tres" id="3"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_water"]
+size = Vector2(50, 50)
+subdivide_width = 50
+subdivide_depth = 50
 
 [node name="Play" type="Node3D"]
 script = ExtResource("1")
@@ -17,6 +23,10 @@ transform = Transform3D(-0.422618, -0.694272, 0.582563, 0, 0.642788, 0.766044, -
 shadow_enabled = true
 directional_shadow_max_distance = 50
 shadow_bias = 0.1
+
+[node name="Water" type="MeshInstance3D" parent="."]
+mesh = SubResource("PlaneMesh_water")
+material_override = ExtResource("3")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = ExtResource("2")
