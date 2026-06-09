@@ -14,7 +14,9 @@ func _ready():
 	env_node = get_node("../WorldEnvironment")
 	sun = get_node("../DirectionalLight3D")
 	if env_node and env_node.environment and env_node.environment.sky:
-		sky_material = env_node.environment.sky.sky_material
+		var mat = env_node.environment.sky.sky_material
+		if mat is ProceduralSkyMaterial:
+			sky_material = mat
 
 	fade_overlay = ColorRect.new()
 	fade_overlay.color = Color(0, 0, 0, 0)

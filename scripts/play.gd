@@ -24,6 +24,7 @@ var bounds_max: Vector3i = Vector3i(-999999, 0, -999999)
 var last_player_cell: Vector3i = Vector3i(999999, 0, 999999)
 var ground_plane: MeshInstance3D
 var ground_body: StaticBody3D
+var water_area: Area3D
 var unsaved_changes: bool = false
 var save_timer: float = 0.0
 var fog_visible := false
@@ -112,6 +113,7 @@ func load_map():
 
 	var span = max(bounds_max.x - bounds_min.x, bounds_max.z - bounds_min.z)
 	_create_ground_plane()
+	_create_water_body()
 
 	char_models = [
 		"res://models/plat_models/character.glb",
@@ -151,6 +153,28 @@ func _create_ground_plane():
 	ground_body.position = Vector3(center.x, -0.75, center.y)
 	add_child(ground_body)
 
+func _create_water_body():
+	if water_area:
+		water_area.queue_free()
+	water_area = Area3D.new()
+	water_area.add_to_group("water")
+	var col = CollisionShape3D.new()
+	col.shape = BoxShape3D.new()
+	col.shape.size = Vector3(500, 10, 500)
+	water_area.add_child(col)
+	water_area.position = Vector3(0, -3, 0)
+	add_child(water_area)
+	water_area.body_entered.connect(_on_water_entered)
+	water_area.body_exited.connect(_on_water_exited)
+
+func _on_water_entered(body: Node):
+	if body.is_in_group("player"):
+		body.set_meta("in_water", true)
+
+func _on_water_exited(body: Node):
+	if body.is_in_group("player"):
+		body.set_meta("in_water", false)
+
 func _get_ground_center() -> Vector2:
 	if bounds_min.x == 999999:
 		return Vector2(0, 0)
@@ -176,6 +200,7 @@ func _update_ground_plane():
 
 func _spawn_player(pos: Vector3):
 	player = load("res://scenes/objects/player.tscn").instantiate()
+	player.add_to_group("player")
 	player.position = pos + Vector3(0, 1, 0)
 	view = load("res://scripts/view_platformer.gd").new()
 	view.target = player

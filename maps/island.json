@@ -2,37 +2,373 @@
 	"cash": 10000,
 	"cells": [
 		{
-			"id": "block-sand_a",
+			"id": "block-sand_b",
 			"orient": 0,
-			"uuid": "1eb481ee-43d8-82d9-a2d2-1eecc69bd602",
-			"x": -0.5,
-			"y": 1.75,
-			"z": 2.5
-		},
-		{
-			"id": "block-sand_a",
-			"orient": 0,
-			"uuid": "850a360d-2d5c-eb8d-c016-110069dcfa93",
-			"x": 0.0,
-			"y": 2.0,
-			"z": 4.0
-		},
-		{
-			"id": "block-sand_a",
-			"orient": 0,
-			"uuid": "af0997fa-a79d-be33-1d9e-91409bd8449f",
-			"x": 1.0,
-			"y": 3.75,
+			"uuid": "9bc8c76b-1e06-7597-b4d9-58b54b33ba09",
+			"x": 1.25,
+			"y": 3.5,
 			"z": 5.0
 		},
 		{
 			"id": "block-sand_b",
 			"orient": 0,
-			"uuid": "466444b9-75d9-4b74-f334-05ca0b54b955",
-			"x": -0.5,
-			"y": 1.5,
+			"uuid": "3ce32b37-2d96-98a2-59ed-ef901079cba0",
+			"x": 1.25,
+			"y": 3.5,
+			"z": 6.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "31105f86-b96b-c70c-92f2-34c374bb47c1",
+			"x": 1.25,
+			"y": 3.5,
+			"z": 7.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "fcc93cdd-681c-5508-f1a5-5ca8f56d2af8",
+			"x": 1.25,
+			"y": 3.5,
+			"z": 8.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "a93c0f0e-4075-e252-35fa-f44475410261",
+			"x": 1.25,
+			"y": 3.5,
+			"z": 9.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "8481cea0-0538-01c1-c8a7-6b685c1f234d",
+			"x": 1.25,
+			"y": 3.5,
+			"z": 4.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "a7063d88-ca5a-28b7-b1fd-fad5ce7adccb",
+			"x": 1.25,
+			"y": 3.5,
+			"z": 3.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "1e3eaad0-b6a8-a6f8-1389-15ccef149452",
+			"x": 1.25,
+			"y": 3.5,
+			"z": 2.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "4f033f13-b0c5-9f11-9940-e049f79c1a0f",
+			"x": 1.25,
+			"y": 3.5,
 			"z": 1.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "35ea1611-c248-2323-dea8-343b64829445",
+			"x": 1.25,
+			"y": 3.5,
+			"z": 0.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "4f214195-be98-d2f4-90dd-7c23f6bd9abd",
+			"x": 1.25,
+			"y": 3.5,
+			"z": -1.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "03dfa83f-2dcf-4d6f-a42d-b2e7a304ad17",
+			"x": 2.25,
+			"y": 3.5,
+			"z": -1.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "cece25eb-64fb-9ab0-4227-14dc4be2197e",
+			"x": 2.25,
+			"y": 3.5,
+			"z": 0.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "a365f3ca-da38-64cd-d3f2-96ad5f18c0c4",
+			"x": 2.25,
+			"y": 3.5,
+			"z": 1.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "e66641a9-54f7-ec1c-e1e4-98c20467f072",
+			"x": 2.25,
+			"y": 3.5,
+			"z": 2.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "292140cb-21a6-8ff2-f9d0-2f3a44681fab",
+			"x": 2.25,
+			"y": 3.5,
+			"z": 3.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "59e88f85-e452-79b4-b9bc-c590560150df",
+			"x": 2.25,
+			"y": 3.5,
+			"z": 4.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "e8ac2e09-4a8d-b993-b6a7-9aed684f540b",
+			"x": 2.25,
+			"y": 3.5,
+			"z": 5.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "e88ca34e-8989-b6b4-97db-ff68dfe52198",
+			"x": 2.25,
+			"y": 3.5,
+			"z": 6.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "0e985dc6-0ad2-64fa-4dfe-05f8e37e7164",
+			"x": 2.25,
+			"y": 3.5,
+			"z": 7.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "0ba5be44-f37a-c2da-4559-6bb32130af14",
+			"x": 2.25,
+			"y": 3.5,
+			"z": 8.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "abb405bf-4718-b0f8-d0df-295c7b74a3e7",
+			"x": 2.25,
+			"y": 3.5,
+			"z": 9.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "85e301f2-5d67-4640-27b2-f82e6acac50b",
+			"x": 3.25,
+			"y": 3.5,
+			"z": 9.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "13902e3f-f4c7-631d-837f-0002807ba8f9",
+			"x": 3.5,
+			"y": 3.5,
+			"z": 8.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "2ba011d9-19a0-7943-0c8d-cba3a7a0ba5c",
+			"x": 3.25,
+			"y": 3.5,
+			"z": 7.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "971a9da0-4a32-90b8-8bd3-10fdf0678fc6",
+			"x": 3.25,
+			"y": 3.5,
+			"z": 6.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "3561ed59-05b1-d87e-cac0-2428fa1ef0aa",
+			"x": 3.25,
+			"y": 3.5,
+			"z": 5.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "97c55900-a2bc-5e8b-d7f2-b442d4e21830",
+			"x": 3.25,
+			"y": 3.5,
+			"z": 4.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "c30512c4-cae7-f60e-045a-d61d1fb7ca6d",
+			"x": 3.25,
+			"y": 3.5,
+			"z": 3.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "39e84149-e064-e0a6-89f1-48aa77d90568",
+			"x": 3.25,
+			"y": 3.5,
+			"z": 2.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "222c48f9-2bcb-234e-35a7-b411704ee7d9",
+			"x": 3.25,
+			"y": 3.5,
+			"z": 1.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "9ff19977-7ffd-45b0-61fe-f33dd5eb1b70",
+			"x": 3.25,
+			"y": 3.5,
+			"z": 0.0
+		},
+		{
+			"id": "block-sand_b",
+			"orient": 0,
+			"uuid": "9b757b81-92ae-f6a3-1ead-09da1f64a53b",
+			"x": 3.25,
+			"y": 3.5,
+			"z": -1.0
+		},
+		{
+			"id": "park-cobble_stones",
+			"orient": 0,
+			"uuid": "beb0adaa-b3f1-1665-b7d7-8bf275069f4a",
+			"x": 1.75,
+			"y": 3.75,
+			"z": 0.25
+		},
+		{
+			"id": "park-cobble_stones",
+			"orient": 0,
+			"uuid": "6374a0e7-1be6-04ec-1f89-b152ff4f4ee7",
+			"x": 1.25,
+			"y": 3.75,
+			"z": 0.25
+		},
+		{
+			"id": "park-cobble_stones",
+			"orient": 0,
+			"uuid": "6323b5fb-d50b-7a03-fa57-5fc4f816d7a3",
+			"x": 1.5,
+			"y": 4.0,
+			"z": 0.0
+		},
+		{
+			"id": "park-cobble_stones",
+			"orient": 0,
+			"uuid": "d6d6b64e-7b19-e76e-384b-bccc43d33711",
+			"x": 3.25,
+			"y": 4.0,
+			"z": -0.5
+		},
+		{
+			"id": "park-cobble_stones",
+			"orient": 0,
+			"uuid": "e8e682b2-2a7b-31da-1cf8-e90cf2c3a84c",
+			"x": 1.75,
+			"y": 4.0,
+			"z": 2.25
+		},
+		{
+			"id": "park-cobble_stones_large",
+			"orient": 0,
+			"uuid": "c4806f9d-f2cb-8695-412f-e536c78bb3b3",
+			"x": 2.25,
+			"y": 4.0,
+			"z": 4.0
+		},
+		{
+			"id": "block-wood",
+			"orient": 0,
+			"uuid": "bf6f4702-9223-1c7e-cb01-885587f38808",
+			"x": 2.25,
+			"y": 4.0,
+			"z": 0.0
+		},
+		{
+			"id": "block-wood",
+			"orient": 0,
+			"uuid": "33d3088d-5007-d3e0-3d5c-95519fabc986",
+			"x": 2.25,
+			"y": 4.75,
+			"z": 0.0
+		},
+		{
+			"id": "block-wood",
+			"orient": 0,
+			"uuid": "b97c0a74-3613-f28b-d669-2819131e70f9",
+			"x": 2.25,
+			"y": 5.75,
+			"z": 0.0
+		},
+		{
+			"id": "block-wood",
+			"orient": 0,
+			"uuid": "073fea41-2368-7b07-0443-01e188836080",
+			"x": 2.25,
+			"y": 6.75,
+			"z": 0.0
+		},
+		{
+			"id": "block-wood",
+			"orient": 0,
+			"uuid": "06f99f10-ad35-3b15-1a3a-6524fad952f6",
+			"x": 2.25,
+			"y": 7.75,
+			"z": 0.0
+		},
+		{
+			"id": "block-wood",
+			"orient": 0,
+			"uuid": "038000f0-1492-d976-0ff3-1aca04698700",
+			"x": 2.25,
+			"y": 8.75,
+			"z": 0.0
+		},
+		{
+			"id": "park-tree_large",
+			"orient": 0,
+			"uuid": "983aaaa4-d437-cae2-0930-c5dcd79eb6fe",
+			"x": 2.25,
+			"y": 7.75,
+			"z": 0.25
 		}
 	],
-	"title": "island"
+	"title": "res://maps/island"
 }

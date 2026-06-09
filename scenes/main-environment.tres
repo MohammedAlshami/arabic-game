@@ -1,35 +1,73 @@
-[gd_resource type="Environment" load_steps=3 format=3 uid="uid://jbptgqvstei3"]
+[gd_resource type="Environment" load_steps=10 format=3 uid="uid://jbptgqvstei3"]
 
-[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_lg8b7"]
-sky_horizon_color = Color(0.67451, 0.682353, 0.698039, 1)
-sky_curve = 0.0175
-ground_bottom_color = Color(1, 1, 1, 1)
-ground_curve = 0.171484
+[ext_resource type="Shader" path="res://Sky/clouds.gdshader" id="1_225gl"]
+[ext_resource type="CompressedTexture3D" uid="uid://dbfbysid168mx" path="res://Sky/perlworlnoise.tga" id="2_x0ky6"]
+[ext_resource type="Texture2D" uid="uid://bsk6dvysqgg7w" path="res://Sky/weather.bmp" id="3_5y4on"]
+[ext_resource type="CompressedTexture3D" uid="uid://c4dp6g6gouj2b" path="res://Sky/worlnoise.bmp" id="4_ga82a"]
 
-[sub_resource type="Sky" id="Sky_7bk1c"]
-sky_material = SubResource("ProceduralSkyMaterial_lg8b7")
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_jcxn0"]
+shader = ExtResource("1_225gl")
+shader_parameter/wind_direction = Vector2(1, 0)
+shader_parameter/wind_speed = 1.0
+shader_parameter/_density = 0.05
+shader_parameter/cloud_coverage = 0.12
+shader_parameter/_time_offset = 0.0
+shader_parameter/rayleigh = 2.0
+shader_parameter/rayleigh_color = Color(0.26, 0.41, 0.58, 1)
+shader_parameter/mie = 0.005
+shader_parameter/mie_eccentricity = 0.8
+shader_parameter/mie_color = Color(0.63, 0.77, 0.92, 1)
+shader_parameter/turbidity = 10.0
+shader_parameter/sun_disk_scale = 1.0
+shader_parameter/ground_color = Color(1, 1, 1, 1)
+shader_parameter/exposure = 0.1
+shader_parameter/worlnoise = ExtResource("4_ga82a")
+shader_parameter/perlworlnoise = ExtResource("2_x0ky6")
+shader_parameter/weathermap = ExtResource("3_5y4on")
+
+[sub_resource type="Sky" id="Sky_m81e2"]
+sky_material = SubResource("ShaderMaterial_jcxn0")
+
+[sub_resource type="Environment" id="3"]
+background_mode = 2
+sky = SubResource("Sky_m81e2")
+tonemap_mode = 3
+tonemap_exposure = 1.3
+sdfgi_enabled = true
+sdfgi_energy = 1.1
+glow_enabled = true
+glow_intensity = 0.52
+glow_bloom = 0.05
+glow_blend_mode = 0
+glow_hdr_luminance_cap = 45.5
+fog_density = 0.003
+volumetric_fog_enabled = true
+volumetric_fog_density = 0.2
+volumetric_fog_albedo = Color(0.716103, 0.693244, 0.545719, 1)
+volumetric_fog_emission = Color(0.918141, 0.563686, 0.149658, 1)
+volumetric_fog_emission_energy = 0.0
+volumetric_fog_anisotropy = 0.9
+volumetric_fog_length = 3.0
+volumetric_fog_sky_affect = 0.0
 
 [resource]
-background_mode = 1
-background_color = Color(0.560784, 0.592157, 0.670588, 1)
-sky = SubResource("Sky_7bk1c")
-ambient_light_source = 2
-ambient_light_color = Color(0.662745, 0.694118, 0.772549, 1)
-ambient_light_energy = 0.75
-tonemap_mode = 2
-ssao_enabled = true
-ssao_radius = 0.25
-ssao_intensity = 0.5
-ssao_power = 100.0
-ssao_horizon = 0.1
-sdfgi_cascades = 1
-sdfgi_energy = 0.5
-glow_levels/2 = 0.6
-glow_levels/3 = 0.6
-glow_levels/5 = 0.0
-glow_intensity = 2.0
-fog_enabled = true
-fog_density = 0.008
-fog_depth_end = 40.0
-fog_light_color = Color(0.66, 0.69, 0.77, 1)
-fog_sun_scatter = 0.5
+background_mode = 2
+sky = SubResource("Sky_m81e2")
+tonemap_mode = 3
+tonemap_exposure = 1.3
+sdfgi_enabled = true
+sdfgi_energy = 1.1
+glow_enabled = true
+glow_intensity = 0.52
+glow_bloom = 0.05
+glow_blend_mode = 0
+glow_hdr_luminance_cap = 45.5
+fog_density = 0.003
+volumetric_fog_enabled = true
+volumetric_fog_density = 0.2
+volumetric_fog_albedo = Color(0.716103, 0.693244, 0.545719, 1)
+volumetric_fog_emission = Color(0.918141, 0.563686, 0.149658, 1)
+volumetric_fog_emission_energy = 0.0
+volumetric_fog_anisotropy = 0.9
+volumetric_fog_length = 3.0
+volumetric_fog_sky_affect = 0.0

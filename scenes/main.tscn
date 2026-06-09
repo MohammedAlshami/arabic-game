@@ -54,9 +54,9 @@ corner_radius_bottom_left = 8
 corner_radius_bottom_right = 8
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_water"]
-size = Vector2(50, 50)
-subdivide_width = 50
-subdivide_depth = 50
+size = Vector2(500, 500)
+subdivide_width = 100
+subdivide_depth = 100
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_btn"]
 bg_color = Color(0.25, 0.5, 0.2, 1)
@@ -117,9 +117,11 @@ mesh = SubResource("PlaneMesh_water")
 material_override = ExtResource("25_iavt4")
 
 [node name="Sun" type="DirectionalLight3D" parent="."]
-transform = Transform3D(-0.422618, -0.694272, 0.582563, 0, 0.642788, 0.766044, -0.906308, 0.323744, -0.271654, 0, 0, 0)
+transform = Transform3D(0.685385, 0.2339, 0.689593, -0.72818, 0.221597, 0.648574, -0.00111012, -0.946671, 0.3222, 0.145323, 33.145, 0.0275749)
+light_color = Color(0.811765, 0.862745, 0.8, 1)
+light_energy = 1.5
 shadow_enabled = true
-shadow_opacity = 0.75
+directional_shadow_max_distance = 150.0
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 

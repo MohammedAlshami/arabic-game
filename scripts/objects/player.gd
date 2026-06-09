@@ -12,6 +12,7 @@ signal coin_collected
 var movement_velocity: Vector3
 var rotation_direction: float
 var gravity = 0
+var on_water := false
 
 var previously_floored = false
 var peak_y: float = 0.0
@@ -45,13 +46,26 @@ func _physics_process(delta):
 	handle_controls(delta)
 	handle_gravity(delta)
 
-	handle_effects(delta)
+	on_water = has_meta("in_water") and get_meta("in_water")
 
-	# Movement
+	if on_water:
+		var wave = sin(global_position.x * 0.5 + Time.get_ticks_msec() * 0.001 * 2.0) * cos(global_position.z * 0.7 + Time.get_ticks_msec() * 0.001 * 1.5) * 0.3
+		var target_y = wave
+		if is_on_floor():
+			global_position.y = target_y
+		else:
+			global_position.y = move_toward(global_position.y, target_y, delta * 0.5)
+		if velocity.y < 0:
+			velocity.y *= 0.5
+
+	handle_effects(delta)
 
 	var applied_velocity: Vector3
 
-	applied_velocity = velocity.lerp(movement_velocity, delta * 10)
+	if on_water:
+		applied_velocity = velocity.lerp(movement_velocity * 0.4, delta * 10)
+	else:
+		applied_velocity = velocity.lerp(movement_velocity, delta * 10)
 	applied_velocity.y = -gravity
 
 	velocity = applied_velocity
@@ -128,14 +142,15 @@ func _physics_process(delta):
 
 	if is_on_floor():
 		model.rotation.x = lerp_angle(model.rotation.x, deg_to_rad(0), delta * 10)
-		peak_y = position.y
-		falling_hard = false
-		falling_sound_played = false
-		crash_sound_played = false
-		if just_landed and gravity > 2:
-			model.scale = Vector3(1.25, 0.75, 1.25)
-			if not was_falling_hard:
-				Audio.play("res://sounds/land.ogg")
+		if not on_water:
+			peak_y = position.y
+			falling_hard = false
+			falling_sound_played = false
+			crash_sound_played = false
+			if just_landed and gravity > 2:
+				model.scale = Vector3(1.25, 0.75, 1.25)
+				if not was_falling_hard:
+					Audio.play("res://sounds/land.ogg")
 
 	previously_floored = is_on_floor()
 
@@ -146,7 +161,12 @@ func handle_effects(delta):
 	particles_trail.emitting = false
 	sound_footsteps.stream_paused = true
 
-	if is_on_floor():
+	if on_water:
+		if animation.current_animation != "jump":
+			animation.play("jump", 0.1)
+		sound_footsteps.stream_paused = true
+		particles_trail.emitting = false
+	elif is_on_floor():
 		var horizontal_velocity = Vector2(velocity.x, velocity.z)
 		var speed_factor = horizontal_velocity.length() / movement_speed / delta
 		if speed_factor > 0.05:
@@ -198,9 +218,10 @@ func handle_controls(delta):
 # Handle gravity
 
 func handle_gravity(delta):
-
+	if on_water:
+		gravity = max(gravity - 20 * delta, -1.0)
+		return
 	gravity += 25 * delta
-
 	if gravity > 0 and is_on_floor():
 		gravity = 0
 

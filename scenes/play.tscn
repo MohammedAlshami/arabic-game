@@ -5,9 +5,9 @@
 [ext_resource type="Material" uid="uid://b6jykm2mvew3m" path="res://shaders/water_material.tres" id="3"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_water"]
-size = Vector2(50, 50)
-subdivide_width = 50
-subdivide_depth = 50
+size = Vector2(500, 500)
+subdivide_width = 100
+subdivide_depth = 100
 
 [node name="Play" type="Node3D"]
 script = ExtResource("1")
@@ -19,10 +19,11 @@ cell_center_y = false
 cell_center_z = false
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(-0.422618, -0.694272, 0.582563, 0, 0.642788, 0.766044, -0.906308, 0.323744, -0.271654, 0, 0, 0)
+transform = Transform3D(0.685385, 0.2339, 0.689593, -0.72818, 0.221597, 0.648574, -0.00111012, -0.946671, 0.3222, 0.145323, 33.145, 0.0275749)
+light_color = Color(0.811765, 0.862745, 0.8, 1)
+light_energy = 1.5
 shadow_enabled = true
-directional_shadow_max_distance = 50
-shadow_bias = 0.1
+directional_shadow_max_distance = 150.0
 
 [node name="Water" type="MeshInstance3D" parent="."]
 mesh = SubResource("PlaneMesh_water")
